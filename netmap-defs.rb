@@ -20,7 +20,7 @@ $nm_ban = {
 }
 
 $nm_os = [
-  "auto",
+  # "auto",
   "linux",
   "bsd",
   "solaris",
@@ -62,3 +62,10 @@ $nm_netstat = {
   :win      => "netstat -an"
 }
 
+#TODO: IPv6 support
+$nm_netstat_regex = {
+  :linux    => /(?<proto>(tcp|udp))\s*\d+\s*\d+\s*(?<src>(\d+\.\d+\.\d+\.\d+))\:(?<sport>[\d|*]+)\s*(?<dst>(\d+\.\d+\.\d+\.\d+))\:(?<dport>[\d|*]+)\s*(ESTABLISHED|LISTEN)/im,
+  :bsd      => //im,
+  :solaris  => //im,
+  :win      => //im,
+}
