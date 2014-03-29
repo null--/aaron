@@ -64,9 +64,9 @@ $nm_netstat = {
 
 #TODO: IPv6 support
 $nm_netstat_regex = {
-  "linux"    => /(?<proto>(tcp|udp))\s*\d+\s*\d+\s*(?<src>(\d+\.\d+\.\d+\.\d+))\:(?<sport>\d+)\s*(?<dst>(\d+\.\d+\.\d+\.\d+))\:(?<dport>\d+)\s*(?<type>ESTABLISHED|LISTEN)/im,
+  "linux"    => /(?<proto>(tcp|udp))\s*\d+\s*\d+\s*(?<src>(\d+\.\d+\.\d+\.\d+))\:(?<sport>[1-9]\d*)\s*(?<dst>(\d+\.\d+\.\d+\.\d+))\:(?<dport>[1-9]\d*)\s*(?<type>ESTABLISHED|LISTEN)/im,
   "bsd"      => //im,
   "solaris"  => //im,
-  "win"      => //im,
+  "win"      => /(?<proto>(tcp|udp))\s*(?<src>(\d+\.\d+\.\d+\.\d+))\:(?<sport>[1-9]\d*)\s*(?<dst>(\d+\.\d+\.\d+\.\d+))\:(?<dport>[1-9]\d*)\s*(?<type>ESTABLISHED|LISTENING)/im,
 }
 

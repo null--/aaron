@@ -16,18 +16,24 @@ class NetMap < Thor
 
   def initialize(*args)
     super
-    @master = MasterMind.new(options[:verbose], options[:os])
+    @master = MasterMind.new(options[:verbose], options[:os], options[:update], options[:backup])
   end
   
   class_option :verbose,  :type => :boolean, :default => false, :alias => "-v",
       :desc => "verbose mode"
+  class_option :update,  :type => :boolean, :default => false, :alias => "-u",
+      :desc => "Update an existing diagram"
+  class_option :backup,  :type => :boolean, :default => false, :alias => "-b",
+      :desc => "Backup an existing diagram"
   class_option :os,       :type => :string,  :default => "#{$nm_os[0]}", :required => true,
       :banner => "TARGET_OS",
       :desc => "Values: #{$os}"
   class_option :output,   :type => :string, :alias => "-o", :default => "output#{$nm_ext}", :required => true,
       :banner => "OUTPUT_FILE"
-  class_option :png,      :type => :boolean, :default => true,
+  class_option :png,      :type => :boolean, :default => false,
       :desc => "Save graph in png format, too"
+  class_option :pdf,      :type => :boolean, :default => false,
+      :desc => "Save graph in pdf format, too"
 
   desc "file {NETSTAT-OUTPUT}", "Create a new graph from a netstat file (netstat -blah > NETSTAT-OUTPUT)"
   def file(nsfile)
@@ -37,6 +43,7 @@ class NetMap < Thor
     master.parse_netstat(File.read(nsfile))
     master.save_graph(options[:output])
     master.save_png(options[:output])  if options[:png]
+    master.save_pdf(options[:output])  if options[:pdf]
   end
 
   desc "ssh {HOST}", "Execute a netstat command via a SSH connection on the remote host"
@@ -68,4 +75,4 @@ class NetMap < Thor
 end
 
 NetMap.start
-  
+
