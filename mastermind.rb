@@ -37,7 +37,7 @@ class MasterMind
       @graph["color"]       = $clr_graph
       @graph["layout"]      = $nm_graph_layout
       @graph["ranksep"]     = "3.0"
-      @graph["ratio"]     = "auto"
+      @graph["ratio"]       = "auto"
     end
   # rescue => details
     # puts "#{$nm_ban["err"]} load_graph failed! #{details}" if @verbose
@@ -137,7 +137,7 @@ class MasterMind
       c = @hostnode
     else
       c = find_node(name2)
-      c = @graph.add_nodes(name2, "style" => "filled", "color" => $clr_cnode) if c.nil?
+      c = @graph.add_nodes(name2, "shape" => $nm_node_shape, "style" => "filled", "color" => $clr_cnode) if c.nil?
     end
     
     #TODO: it's not geek
@@ -187,7 +187,7 @@ class MasterMind
 
     #TODO it's not geek
     if @hostnode.nil? then
-      @hostnode = @graph.add_nodes(@hostinfo.strip, "style" => "filled", "color" => $clr_pnode)
+      @hostnode = @graph.add_nodes(@hostinfo.strip, "shape" => $nm_node_shape, "style" => "filled", "color" => $clr_pnode)
     else
       @hostnode.set do |nd|
         nd.color = $clr_pnode

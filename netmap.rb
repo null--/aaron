@@ -42,7 +42,7 @@ Examples:
     ./netmap.rb file netstat.out --verbose --png --pdf --output test.nmg
   2. Update an existing diagram from a netstat output file
     ./netmap.rb file netstat-win.out --verbose --png --pdf --os win --output test.nmg --update
-  3. Using SSH to create a diagram
+  3. Use SSH to create a diagram
     ./netmap.rb ssh localhost --user temp --pass temp --verbose --png --pdf --output test.nmg
   4. More advanced SSH
     ./netmap.rb ssh example.com --user root --pass toor --verbose --png --pdf --output test.nmg --os win --port 80 --key ~/.ssh/id_rsa --update
@@ -50,6 +50,8 @@ Examples:
     cat netstat-win.out | ./netmap.rb stdin --verbose --png --pdf --os linux --output output-win.nmg
     or
     netstat -antu | ./netmap.rb stdin --verbose --png --pdf --os linux --output output-win.nmg
+  6. Execute command on remote machine via SMB (psexec)
+    ./netmap.rb psexec 192.168.13.50 --os win --user Administrator --pass 123456 --domain WORKGROUP --verbose --png --pdf --output test.nmg
     BANNER
   end
   
@@ -140,11 +142,28 @@ Examples:
   end
 
   desc "psexec {HOST}", "#{$nm_ban["exp"]} Execute commands via a 'psexec' connection the remote (Windows) host (requires metasploit)"
-  method_option :user,        :type => :string,   :alias => "-l", :banner => "SMB_USERNAME"
+  method_option :user,        :type => :string,   :alias => "-l", :banner => "SMB_USERNAME", :require => true
   method_option :pass,        :type => :string,   :alias => "-p", :banner => "SMB_PASSWORD"
   method_option :domain,      :type => :string,   :default => "WORKGROUP", :alias => "-d", :banner => "SMB_DOMAIN"
   def psexec(host)
     puts "#{$nm_ban["inf"]} psexec: host=#{host}, user=#{options[:user]}" if options[:verbose]
+  
+    cmd = "msfcli auxiliary/admin/smb/psexec_command RHOSTS='#{host}' SMBUser='#{options[:user]}'"
+    cmd = cmd + " SMBPass='#{options[:pass]}'" if not options[:pass].nil?
+    cmd = cmd + " SMBDomain='#{options[:domain]}'" if not options[:domain].nil?
+    
+    # hs = %x( #{cmd} COMMAND='#{$nm_hostname[ options[:os] ]}' E )
+    # ov = %x( #{cmd} COMMAND='#{$nm_os_ver[ options[:os] ]}' E )
+    ns = %x( #{cmd} COMMAND='#{$nm_netstat[ options[:os] ]}' E )
+    
+    puts "#{$nm_ban["inf"]} netstat result:\n#{ns}" if options[:verbose]
+    prologue
+    # master.parse_hostname ( hs )
+    # master.parse_os_ver   ( ov )
+    # master.parse_adapter  ( ad )
+    # master.parse_route    ( rt )
+    master.parse_netstat  ( ns )
+    epilogue
   end
 
   desc "adb", "#{$nm_ban["exp"]} Execute commands via an 'adb' shell (android)"
