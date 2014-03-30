@@ -8,6 +8,8 @@ $nfo =
 +------------------------------------+
 """
 
+$nm_img_dir = "./img/"
+
 $nm_ext = ".nsg"
 
 $nm_node_shape  = "folder"
@@ -29,8 +31,9 @@ $nm_ban = {
   "msm"    => "[MASTER]"
 }
 
+#TODO: detect os automatically
 $nm_os = [
-  "auto",
+  # "auto",
   "linux",
   "bsd",
   "solaris",
@@ -38,9 +41,9 @@ $nm_os = [
 ]
 
 $nm_os_ver = {
-  "linux"    => "uname -a",
-  "bsd"      => "uname -a",
-  "solaris"  => "uname -a",
+  "linux"    => "uname -rs",
+  "bsd"      => "uname -rs",
+  "solaris"  => "uname -rs",
   "win"      => "ver"
 }
 

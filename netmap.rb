@@ -78,22 +78,22 @@ class NetMap < Thor
       puts "#{$nm_ban["inf"]} ssh: Connection Established, OS: #{options[:os]}" if options[:verbose]
       hs = ssh.exec!( $nm_hostname[ options[:os] ] )
       ov = ssh.exec!( $nm_os_ver[ options[:os] ] )      
-      ad = ssh.exec!( $nm_adapter[ options[:os] ] )
-      rt = ssh.exec!( $nm_netstat[ options[:os] ] )            
+      # ad = ssh.exec!( $nm_adapter[ options[:os] ] )
+      # rt = ssh.exec!( $nm_route[ options[:os] ] )            
       ns = ssh.exec!( $nm_netstat[ options[:os] ] )
-      puts "#{$nm_ban["inf"]} netstat result:\n#{res}" if options[:verbose]
+      puts "#{$nm_ban["inf"]} netstat result:\n#{ns}" if options[:verbose]
       prologue
-      master.parse_hostname( hs )
-      master.parse_os_ver( ov )
-      master.parse_adapter( ad )
-      master.parse_route( rt )
-      master.parse_netstat( ns )
+      master.parse_hostname ( hs )
+      master.parse_os_ver   ( ov )
+      # master.parse_adapter  ( ad )
+      # master.parse_route    ( rt )
+      master.parse_netstat  ( ns )
       epilogue
       ssh.close()
     end
   
-  rescue => details
-    puts "#{$nm_ban["err"]} SSH Failed #{details}"    
+  # rescue => details
+    # puts "#{$nm_ban["err"]} SSH Failed #{details}"    
   end
 
   desc "psexec {HOST}", "#{$nm_ban[:exp]} Execute commands via a 'psexec' connection the remote (Windows) host (requires metasploit)"

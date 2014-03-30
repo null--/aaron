@@ -60,18 +60,19 @@ class MasterMind
   end
 
   def parse_hostname(data)
+    @hostinfo = @hostinfo + "Name: " + data.strip if not @hostinfo.include? data
   end
   
   def parse_os_ver(data)
+    @hostinfo = @hostinfo + "Ver: " + data.strip if not @hostinfo.include? data
   end
 
   def parse_adapter(data)
+    @hostinfo = @hostinfo + "Adapters: " + data.strip if not @hostinfo.include? data
   end
 
   def parse_route(data)
-  end
-
-  def parse_adapter(data)
+    @hostinfo = @hostinfo + "Route: " + data if not @hostinfo.include? data
   end
 
   def find_node(text)
@@ -137,6 +138,12 @@ class MasterMind
     end
   end
 
+  def add_image
+    @hostnode.set do |nd|
+      nd.image = $nm_img_dir + @os + ".png"
+    end
+  end
+  
   def parse_netstat(data)
     rex = $nm_netstat_regex[@os]
     if !rex then
@@ -168,7 +175,7 @@ class MasterMind
 
     #TODO it's not geek
     if @hostnode.nil? then
-      @hostnode = @graph.add_nodes(@hostinfo.strip, "tooltip" => "blah blah", "style" => "filled", "color" => $clr_pnode)
+      @hostnode = @graph.add_nodes(@hostinfo.strip, "style" => "filled", "color" => $clr_pnode)
     else
       @hostnode.set do |nd|
         nd.color = $clr_pnode
@@ -176,6 +183,7 @@ class MasterMind
         nd.label = @hostinfo
       end
     end
+    add_image
 
     conns.each do |conn|      
       lbl = " s:#{conn[:sport]} d:#{conn[:dport]}"
