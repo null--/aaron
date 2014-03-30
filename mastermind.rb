@@ -26,26 +26,37 @@ class MasterMind
   def load_graph(path)
     if File.exists?(path) and @update then
       @graph = GraphViz.parse( path )
-    else
-      @graph = GraphViz.new("netmap")
+      puts "#{$nm_ban["err"]} Failed to load diagram" if @graph.nil?
+    end
+    
+    if @graph.nil?
+      @graph = GraphViz.new("netmap", )
       
       @graph.node["shape"]  = $nm_node_shape
       @graph.node["color"]  = $clr_node
       @graph["color"]       = $clr_graph
       @graph["layout"]      = $nm_graph_layout
+      @graph["ranksep"]     = "3.0"
+      @graph["ratio"]     = "auto"
     end
-  rescue => details
-    puts "#{$nm_ban["err"]} load_graph failed! #{details}" if @verbose
+  # rescue => details
+    # puts "#{$nm_ban["err"]} load_graph failed! #{details}" if @verbose
   end
 
   def save_graph(path)
     if File.exists?(path) and @backup then
       FileUtils.mv(path, "#{path}.#{Time.now}.bak")
     end
-
-    @graph.output( :dot => path )
-  rescue => details
-    puts "#{$nm_ban["err"]} save_graph failed! #{details}" if @verbose
+    
+    # @graph.each_edge do |ed|
+    #   puts ed["head_lp"].to_s
+    #   ed.delete("head_lp") if not ed["head_lp"].nil?
+    #   ed.delete("tail_lp") if not ed["tail_lp"].nil?
+    # end
+    
+    @graph.output( :canon => path )
+  # rescue => details
+  #   puts "#{$nm_ban["err"]} save_graph failed! #{details}" if @verbose
   end
 
   def save_png(path)
@@ -77,7 +88,7 @@ class MasterMind
   end
 
   def find_node(text)
-    return nil if text.nil?
+    return nil if text.nil? or @graph.nil?
     
     puts "#{$nm_ban[:inf]} Find_Node: #{text}"
     @graph.each_node do |nd, nid|
@@ -90,16 +101,16 @@ class MasterMind
     nil
   end
   
-  def find_edge(text, name1, name2)
-    return nil if text.nil?
+  def find_edge(head, tail, name1, name2)
+    return nil if head.nil? or tail.nil?
    
-    puts "#{$nm_ban[:inf]} Find_Edge: #{text}, between #{name1}, #{name2}"
+    puts "#{$nm_ban[:inf]} Find_Edge: #{head}/#{tail}, between #{name1}, #{name2}"
 
     @graph.each_edge do |ed|
       # puts ed.head_node.to_ruby + " | " + ed.tail_node.to_ruby
 
-      # puts "Edge: #{ed["label"].to_s}, ID:#{ed}"
-      if ed["label"].to_s.include? text and 
+      # puts "Edge: #{ed["headlabel"].to_s}/#{ed["taillabel"].to_s}, ID:#{ed}"
+      if ed["headlabel"].to_s.include? head and ed["taillabel"].to_s.include? tail and
         ((ed.head_node.to_ruby == name1 and ed.tail_node.to_ruby == name2) or
          (ed.head_node.to_ruby == name2 and ed.tail_node.to_ruby == name1) )
       then
@@ -111,8 +122,8 @@ class MasterMind
     nil
   end
   
-  def add_node(name1, name2, lbl, color, reverse)    
-    puts "#{$nm_ban[:inf]} Adding(#{@hostinfo}) #{name1} <-- #{lbl} --> #{name2}"
+  def add_node(name1, name2, head, tail, color, reverse)    
+    puts "#{$nm_ban[:inf]} Adding(#{@hostinfo}) #{name1} <-- #{head}/#{tail} -- #{reverse.to_s} --> #{name2}"
     
     # loopback
     return if not @loopback and (name1.include?("127.0.0.1") or @hostinfo.include?(name2) or (name1 == name2))
@@ -122,8 +133,6 @@ class MasterMind
       name2 = @hostinfo.strip
     end
     
-    puts "#{$nm_ban[:inf]} Adding(#{@hostinfo.strip}) #{name1} <-- #{lbl} --> #{name2}"
-
     if @hostinfo.include?(name2) or (name1 == name2) then
       c = @hostnode
     else
@@ -132,12 +141,12 @@ class MasterMind
     end
     
     #TODO: it's not geek
-    return if not find_edge(lbl, name1, name2).nil?
+    return if not find_edge(head, tail, name1, name2).nil?
     
-    if reverse then
-      @graph.add_edges(c, @hostnode, "label" => lbl, "color" => color)
+    if true then
+      @graph.add_edges(c, @hostnode, "headlabel" => head, "taillabel" => tail, "labeldistance" => "2", "color" => color)
     else
-      @graph.add_edges(@hostnode, c, "label" => lbl, "color" => color)
+      @graph.add_edges(@hostnode, c, "headlabel" => tail, "taillabel" => head, "color" => color)
     end
   end
 
@@ -189,13 +198,12 @@ class MasterMind
     add_image
 
     conns.each do |conn|    
-      lbl = " s:#{conn[:sport]} d:#{conn[:dport]}"
       next if conn[:proto].nil?
       
       color = $clr_tcp
       color = $clr_udp if conn[:proto].downcase == "udp"
 
-      add_node(conn[:src].strip, conn[:dst].strip, lbl.strip, color, (conn[:type].include? "LISTEN"))
+      add_node(conn[:src].strip, conn[:dst].strip, conn[:sport].strip, conn[:dport].strip, color, (conn[:type].include? "LISTEN"))
     end
   end
 end

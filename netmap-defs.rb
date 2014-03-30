@@ -12,7 +12,7 @@ $nm_img_dir = "./img/"
 $nm_ext = ".nsg"
 
 $nm_node_shape  = "folder"
-$nm_graph_layout= "dot"
+$nm_graph_layout= "circo"
 $clr_pnode      = "#00DD99"
 $clr_cnode      = "#118855"
 $clr_bg         = "white"
