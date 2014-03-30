@@ -1,12 +1,11 @@
-$nm_version = "0.1u" # u: unstable, t: testing, s: stable
+$nm_version = "0.1-unstable"
 
-$nfo = 
-"""+------------------------------------+
-| #netmap #{$nm_version} - GPLv3 2014          |
-|    by _null_                       |
-| https://github.com/null--/netmap   |
-+------------------------------------+
-"""
+$nfo = <<-NFO
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  netmap #{$nm_version} - GPLv3 2014 - by _null_
+    https://github.com/null--/netmap
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+NFO
 
 $nm_img_dir = "./img/"
 

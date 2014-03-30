@@ -2,22 +2,24 @@ require 'graphviz'
 require 'fileutils'
 
 class MasterMind
-  attr_accessor :graph
-  attr_accessor :verbose
-  attr_accessor :os
-  attr_accessor :update
-  attr_accessor :backup
-  @hostinfo
-  @hostnode
-
-  def initialize(verbose, os, update, backup)
+  attr_reader   :graph
+  attr_reader   :verbose
+  attr_reader   :os
+  attr_reader   :update
+  attr_reader   :backup
+  attr_accessor :hostinfo
+  attr_reader   :hostnode
+  attr_reader   :loopback
+  
+  def initialize(verbose, os, update, backup, loopback)
     @verbose = verbose
     @os = os
     @update = update
     @backup = backup
     @hostinfo = ""
     @hostnode = nil
-
+    @loopback = loopback
+    
     puts "#{$nm_ban["msm"]} hack like a pro!" if @verbose
   end
   
@@ -29,7 +31,6 @@ class MasterMind
       
       @graph.node["shape"]  = $nm_node_shape
       @graph.node["color"]  = $clr_node
-      @graph.node["background"] = $clr_bg
       @graph["color"]       = $clr_graph
       @graph["layout"]      = $nm_graph_layout
     end
@@ -114,6 +115,8 @@ class MasterMind
     puts "#{$nm_ban[:inf]} Adding(#{@hostinfo}) #{name1} <-- #{lbl} --> #{name2}"
     
     # loopback
+    return if not @loopback and (name1.include?("127.0.0.1") or @hostinfo.include?(name2) or (name1 == name2))
+    
     if name1.include?("127.0.0.1") then
       name1 = @hostinfo.strip
       name2 = @hostinfo.strip
@@ -185,9 +188,10 @@ class MasterMind
     end
     add_image
 
-    conns.each do |conn|      
+    conns.each do |conn|    
       lbl = " s:#{conn[:sport]} d:#{conn[:dport]}"
-
+      next if conn[:proto].nil?
+      
       color = $clr_tcp
       color = $clr_udp if conn[:proto].downcase == "udp"
 
