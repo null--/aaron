@@ -18,7 +18,7 @@ class MasterMind
     @hostinfo = ""
     @hostnode = nil
 
-    puts "#{$nm_ban["msm"]} Let the hackin' begins!" if @verbose
+    puts "#{$nm_ban["msm"]} hack like a pro!" if @verbose
   end
   
   def load_graph(path)
@@ -26,10 +26,12 @@ class MasterMind
       @graph = GraphViz.parse( path )
     else
       @graph = GraphViz.new("netmap")
-
-      @graph.node["shape"] = "ellipse"
-      @graph.node["color"] = "black"
-      @graph["color"] = "black"
+      
+      @graph.node["shape"]  = $nm_node_shape
+      @graph.node["color"]  = $clr_node
+      @graph.node["background"] = $clr_bg
+      @graph["color"]       = $clr_graph
+      @graph["layout"]      = $nm_graph_layout
     end
   rescue => details
     puts "#{$nm_ban["err"]} load_graph failed! #{details}" if @verbose
@@ -57,6 +59,9 @@ class MasterMind
     puts "#{$nm_ban["err"]} save_pdf failed! #{details}" if @verbose
   end
 
+  def parse_hostname(data)
+  end
+  
   def parse_os_ver(data)
   end
 
@@ -72,11 +77,11 @@ class MasterMind
   def find_node(text)
     return nil if text.nil?
     
-    puts "Find_Node: #{text}"
+    puts "#{$nm_ban[:inf]} Find_Node: #{text}"
     @graph.each_node do |nd, nid|
       # puts "Node: #{nd}, ID:#{nid}"
       if nd.include? text then
-        puts "MATCHED!"
+        puts "#{$nm_ban[:inf]} MATCHED!"
         return nid
       end
     end
@@ -86,7 +91,7 @@ class MasterMind
   def find_edge(text, name1, name2)
     return nil if text.nil?
    
-    puts "Find_Edge: #{text}, between #{name1}, #{name2}"
+    puts "#{$nm_ban[:inf]} Find_Edge: #{text}, between #{name1}, #{name2}"
 
     @graph.each_edge do |ed|
       # puts ed.head_node.to_ruby + " | " + ed.tail_node.to_ruby
@@ -96,16 +101,16 @@ class MasterMind
         ((ed.head_node.to_ruby == name1 and ed.tail_node.to_ruby == name2) or
          (ed.head_node.to_ruby == name2 and ed.tail_node.to_ruby == name1) )
       then
-        puts "EDGE MATCHED!"
+        puts "#{$nm_ban[:inf]} EDGE MATCHED!"
         return ed
       end
     end
-    puts "EDGE NOT FOUND!"
+    puts "#{$nm_ban[:inf]} EDGE NOT FOUND!"
     nil
   end
   
   def add_node(name1, name2, lbl, color, reverse)    
-    puts "Adding(#{@hostinfo}) #{name1} <-- #{lbl} --> #{name2}"
+    puts "#{$nm_ban[:inf]} Adding(#{@hostinfo}) #{name1} <-- #{lbl} --> #{name2}"
     
     # loopback
     if name1.include?("127.0.0.1") then
@@ -113,13 +118,13 @@ class MasterMind
       name2 = @hostinfo.strip
     end
     
-    puts "Adding(#{@hostinfo.strip}) #{name1} <-- #{lbl} --> #{name2}"
+    puts "#{$nm_ban[:inf]} Adding(#{@hostinfo.strip}) #{name1} <-- #{lbl} --> #{name2}"
 
     if @hostinfo.include?(name2) or (name1 == name2) then
       c = @hostnode
     else
       c = find_node(name2)
-      c = @graph.add_nodes(name2, "style" => "filled", "color" => "gray") if c.nil?
+      c = @graph.add_nodes(name2, "style" => "filled", "color" => $clr_cnode) if c.nil?
     end
     
     #TODO: it's not geek
@@ -163,10 +168,10 @@ class MasterMind
 
     #TODO it's not geek
     if @hostnode.nil? then
-      @hostnode = @graph.add_nodes(@hostinfo.strip, "style" => "filled", "color" => "green")
+      @hostnode = @graph.add_nodes(@hostinfo.strip, "tooltip" => "blah blah", "style" => "filled", "color" => $clr_pnode)
     else
       @hostnode.set do |nd|
-        nd.color = "green"
+        nd.color = $clr_pnode
         @hostinfo = @hostinfo + "\n" + nd.label.to_s
         nd.label = @hostinfo
       end
@@ -175,8 +180,8 @@ class MasterMind
     conns.each do |conn|      
       lbl = " s:#{conn[:sport]} d:#{conn[:dport]}"
 
-      color = "red"
-      color = "blue" if conn[:proto].downcase == "tcp"
+      color = $clr_tcp
+      color = $clr_udp if conn[:proto].downcase == "udp"
 
       add_node(conn[:src].strip, conn[:dst].strip, lbl.strip, color, (conn[:type].include? "LISTEN"))
     end

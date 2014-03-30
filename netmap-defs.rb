@@ -1,8 +1,7 @@
 $nm_version = "0.1u" # u: unstable, t: testing, s: stable
 
 $nfo = 
-"""
-+------------------------------------+
+"""+------------------------------------+
 | #netmap #{$nm_version} - GPLv3 2014          |
 |    by _null_                       |
 | https://github.com/null--/netmap   |
@@ -10,6 +9,17 @@ $nfo =
 """
 
 $nm_ext = ".nsg"
+
+$nm_node_shape  = "folder"
+$nm_graph_layout= "dot"
+$clr_pnode      = "#00DD99"
+$clr_cnode      = "#118855"
+$clr_bg         = "white"
+$clr_node       = "gray"
+$clr_graph      = "black"
+$clr_tcp        = "purple"
+$clr_udp        = "brown"
+$clr_ssh        = "red"
 
 $nm_ban = {
   "exp"    => "[EXPERIMENTAL]",
@@ -20,7 +30,7 @@ $nm_ban = {
 }
 
 $nm_os = [
-  # "auto",
+  "auto",
   "linux",
   "bsd",
   "solaris",

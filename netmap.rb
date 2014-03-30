@@ -16,9 +16,22 @@ class NetMap < Thor
 
   def initialize(*args)
     super
-    @master = MasterMind.new(options[:verbose], options[:os], options[:update], options[:backup])
+    puts "#{$nfo}"
+    @master = MasterMind.new(options[:verbose], options[:os], options[:update], options[:backup])    
   end
-  
+
+  no_commands do
+    def prologue
+      master.load_graph(options[:output])
+    end
+
+    def epilogue
+      master.save_graph(options[:output])
+      master.save_png(options[:output])  if options[:png]
+      master.save_pdf(options[:output])  if options[:pdf]
+    end
+  end
+
   class_option :verbose,  :type => :boolean, :default => false, :alias => "-v",
       :desc => "verbose mode"
   class_option :update,  :type => :boolean, :default => false, :alias => "-u",
@@ -39,25 +52,48 @@ class NetMap < Thor
   def file(nsfile)
     puts "file: nsfile=#{nsfile}" if options[:verbose]
     
-    master.load_graph(options[:output])
+    prologue
     master.parse_netstat(File.read(nsfile))
-    master.save_graph(options[:output])
-    master.save_png(options[:output])  if options[:png]
-    master.save_pdf(options[:output])  if options[:pdf]
+    epilogue
   end
 
   desc "ssh {HOST}", "Execute a netstat command via a SSH connection on the remote host"
-  method_option :user,        :type => :string, :alias => "-l", :banner => "USERNAME"
+  method_option :user,        :type => :string, :alias => "-l", :banner => "USERNAME", :required => true
   method_option :pass,        :type => :string, :alias => "-p", :banner => "PASSWORD"
-  method_option :key,         :type => :string, :alias => "-k", :banner => "SSH_KEY"
-  method_option :passphrase,  :type => :string, :alias => "-pp", :banner => "SSH_KEY_PASS_PHRASE"
+  method_option :port,        :type => :string, :banner => "PORT", :default => 22
+  method_option :key,         :type => :string, :alias => "-k", :banner => "SSH_KEY",
+    :desc => "Prompts for passphrase if needed."
+  # method_option :passphrase,  :type => :string, :alias => "-pp", :banner => "SSH_KEY_PASS_PHRASE"
   def ssh(host)
-    puts "#{$nm_ban[:inf]} ssh: host=#{host}, user=#{options[:user]}" if options[:verbose]
-
-    if options[:user].nil? and options[:key].nil? then
-      puts "#{$nm_ban[:err]} At least a valid username (--user or -l) or a keyfile (--key or -k) required!"
-      return
+    puts "#{$nm_ban["inf"]} ssh: #{host}:#{options[:port]}, user=#{options[:user]}" if options[:verbose]
+    
+    #note: :port must pass as last argument
+    if options["key"].nil? then
+      ssh = Net::SSH.start(host, options[:user], :password => options[:pass], :port => options[:port].to_i) 
+    else
+      ssh = Net::SSH.start(host, options[:user], :password => options[:pass], :keys => [options["key"]], :port => options[:port].to_i)
     end
+
+    if not ssh.nil? then
+      puts "#{$nm_ban["inf"]} ssh: Connection Established, OS: #{options[:os]}" if options[:verbose]
+      hs = ssh.exec!( $nm_hostname[ options[:os] ] )
+      ov = ssh.exec!( $nm_os_ver[ options[:os] ] )      
+      ad = ssh.exec!( $nm_adapter[ options[:os] ] )
+      rt = ssh.exec!( $nm_netstat[ options[:os] ] )            
+      ns = ssh.exec!( $nm_netstat[ options[:os] ] )
+      puts "#{$nm_ban["inf"]} netstat result:\n#{res}" if options[:verbose]
+      prologue
+      master.parse_hostname( hs )
+      master.parse_os_ver( ov )
+      master.parse_adapter( ad )
+      master.parse_route( rt )
+      master.parse_netstat( ns )
+      epilogue
+      ssh.close()
+    end
+  
+  rescue => details
+    puts "#{$nm_ban["err"]} SSH Failed #{details}"    
   end
 
   desc "psexec {HOST}", "#{$nm_ban[:exp]} Execute commands via a 'psexec' connection the remote (Windows) host (requires metasploit)"
@@ -65,12 +101,12 @@ class NetMap < Thor
   method_option :pass,        :type => :string,   :alias => "-p", :banner => "SMB_PASSWORD"
   method_option :domain,      :type => :string,   :default => "WORKGROUP", :alias => "-d", :banner => "SMB_DOMAIN"
   def psexec(host)
-    puts "#{$nm_ban[:inf]} psexec: host=#{host}, user=#{options[:user]}" if options[:verbose]
+    puts "#{$nm_ban["inf"]} psexec: host=#{host}, user=#{options[:user]}" if options[:verbose]
   end
 
-  desc "adb", "#{$nm_ban[:exp]} Execute commands via an 'adb' shell (android)"
+  desc "adb", "#{$nm_ban["exp"]} Execute commands via an 'adb' shell (android)"
   def adb()
-    puts "#{$nm_ban[:inf]} adb" if options[:verbose]
+    puts "#{$nm_ban["inf"]} adb" if options[:verbose]
   end    
 end
 
