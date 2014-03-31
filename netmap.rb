@@ -17,7 +17,7 @@ class NetMap < Thor
   def initialize(*args)
     super
     puts "#{$nfo}"
-    @master = MasterMind.new(options[:verbose], options[:os], options[:update], options[:backup], options[:loopback])
+    @master = MasterMind.new(options[:verbose], options)
   end
   
   no_commands do
@@ -32,9 +32,9 @@ class NetMap < Thor
     end
   end
 
-  desc "help", "help_banner"
-  def help
-    super
+  desc "help [command]", "help_banner"
+  def help(command)
+    super(command)
     
     puts <<-BANNER
 Examples:
@@ -47,9 +47,9 @@ Examples:
   4. More advanced SSH
     ./netmap.rb ssh example.com --user root --pass toor --verbose --png --pdf --output test.nmg --os win --port 80 --key ~/.ssh/id_rsa --update
   5. Pipe netstat result into netmap
-    cat netstat-win.out | ./netmap.rb stdin --verbose --png --pdf --os linux --output output-win.nmg
+    cat netstat-win.out | ./netmap.rb stdin --verbose --png --pdf --os linux --output test.nmg
     or
-    netstat -antu | ./netmap.rb stdin --verbose --png --pdf --os linux --output output-win.nmg
+    netstat -antu | ./netmap.rb stdin --verbose --png --pdf --os linux --output test.nmg
   6. Execute command on remote machine via SMB (psexec)
     ./netmap.rb psexec 192.168.13.50 --os win --user Administrator --pass 123456 --domain WORKGROUP --verbose --png --pdf --output test.nmg
     BANNER
@@ -123,16 +123,16 @@ Examples:
       puts "#{$nm_ban["inf"]} ssh: Connection Established, OS: #{options[:os]}" if options[:verbose]
       hs = ssh.exec!( $nm_hostname[ options[:os] ] )
       ov = ssh.exec!( $nm_os_ver[ options[:os] ] )      
-      # ad = ssh.exec!( $nm_adapter[ options[:os] ] )
-      # rt = ssh.exec!( $nm_route[ options[:os] ] )            
+      ad = ssh.exec!( $nm_adapter[ options[:os] ] )
+      rt = ssh.exec!( $nm_route[ options[:os] ] )            
       ns = ssh.exec!( $nm_netstat[ options[:os] ] )
       puts "#{$nm_ban["inf"]} netstat result:\n#{ns}" if options[:verbose]
       prologue
-      master.parse_hostname ( hs )
-      master.parse_os_ver   ( ov )
-      # master.parse_adapter  ( ad )
-      # master.parse_route    ( rt )
-      master.parse_netstat  ( ns )
+      master.add_to_hostinfo ( hs )
+      master.add_to_hostinfo ( ov )
+      master.add_to_deepinfo ( ad )
+      master.add_to_deepinfo ( rt )
+      master.parse_netstat   ( ns )
       epilogue
       ssh.close()
     end
@@ -152,17 +152,19 @@ Examples:
     cmd = cmd + " SMBPass='#{options[:pass]}'" if not options[:pass].nil?
     cmd = cmd + " SMBDomain='#{options[:domain]}'" if not options[:domain].nil?
     
-    # hs = %x( #{cmd} COMMAND='#{$nm_hostname[ options[:os] ]}' E )
-    # ov = %x( #{cmd} COMMAND='#{$nm_os_ver[ options[:os] ]}' E )
+    hs = %x( #{cmd} COMMAND='#{$nm_hostname[ options[:os] ]}' E )
+    ov = %x( #{cmd} COMMAND='#{$nm_os_ver[ options[:os] ]}' E )
+    ad = %x( #{cmd} COMMAND='#{$nm_adapter[ options[:os] ]}' E )
+    rt = %x( #{cmd} COMMAND='#{$nm_route[ options[:os] ]}' E )
     ns = %x( #{cmd} COMMAND='#{$nm_netstat[ options[:os] ]}' E )
     
     puts "#{$nm_ban["inf"]} netstat result:\n#{ns}" if options[:verbose]
     prologue
-    # master.parse_hostname ( hs )
-    # master.parse_os_ver   ( ov )
-    # master.parse_adapter  ( ad )
-    # master.parse_route    ( rt )
-    master.parse_netstat  ( ns )
+    master.add_to_hostinfo ( hs )
+    master.add_to_hostinfo ( ov )
+    master.add_to_deepinfo ( ad )
+    master.add_to_deepinfo ( rt )
+    master.parse_netstat   ( ns )
     epilogue
   end
 
