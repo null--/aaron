@@ -2,14 +2,14 @@ $nm_version = "0.1-unstable"
 
 $nfo = <<-NFO
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  #netmap, by _null_ - #{$nm_version} - (l) GPLv3 2014
+  #netmap, by _null_ - #{$nm_version} - 2014 - GPLv3
     https://github.com/null--/netmap
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 NFO
 
-$nm_img_dir = "./img/"
+$nm_img_dir     = "./img/"
 
-$nm_ext = ".nmg"
+$nm_ext         = ".nmg"
 
 $deep_tag       = "comment"
 $nm_node_shape  = "folder"

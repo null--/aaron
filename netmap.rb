@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 
 # Tested on Kali - 2014
 
@@ -17,7 +17,10 @@ class NetMap < Thor
   def initialize(*args)
     super
     puts "#{$nfo}"
+    
     @master = MasterMind.new(options[:verbose], options)
+  rescue
+    help(nil)
   end
   
   no_commands do
@@ -42,9 +45,9 @@ Examples:
     ./netmap.rb file netstat.out --verbose --png --pdf --output test.nmg
   2. Update an existing diagram from a netstat output file
     ./netmap.rb file netstat-win.out --verbose --png --pdf --os win --output test.nmg --update
-  3. Use SSH to create a diagram
+  3. Use SSH to create a diagram (against a linux machine)
     ./netmap.rb ssh localhost --user temp --pass temp --verbose --png --pdf --output test.nmg
-  4. More advanced SSH
+  4. More advanced SSH (against a windows machine)
     ./netmap.rb ssh example.com --user root --pass toor --verbose --png --pdf --output test.nmg --os win --port 80 --key ~/.ssh/id_rsa --update
   5. Pipe netstat result into netmap
     cat netstat-win.out | ./netmap.rb stdin --verbose --png --pdf --os linux --output test.nmg
@@ -66,7 +69,7 @@ Examples:
       :desc => "Values: #{$os}"
   class_option :loopback,      :type => :boolean, :default => false,
       :desc => "Draw loopback connections (e.g. localhost-to-localhost)"
-  class_option :output,   :type => :string, :alias => "-o", :required => true, :default => "sample#{$nm_ext}",
+  class_option :output,   :type => :string, :alias => "-o", :required => true,
       :banner => "OUTPUT_FILE"
   class_option :png,      :type => :boolean, :default => false,
       :desc => "Save graph in png format, too"

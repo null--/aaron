@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 
 require 'thor'
 require './netmap-defs.rb'
@@ -13,6 +13,8 @@ class Netmapolizer < Thor
     
     @master = MasterMind.new(options[:verbose])
     @master.load_graph(options[:nmgfile], true)
+  rescue
+    help(nil)
   end
   
   desc "help [command]", "help_banner"
@@ -22,7 +24,7 @@ class Netmapolizer < Thor
     puts <<-BANNER
 Examples:
   1. Print all windows clients connected to 192.168.0.1 on port 22
-    ./netmapolizer.rb search --dst 192.168.0.1 --dst-port 22 --src-os win
+    ./netmapolizer.rb search --dst 192.168.0.1 --dst_port 22 --src_os win
     BANNER
   end
   
@@ -32,6 +34,13 @@ Examples:
       :desc => "An existing #{$nm_ext}"
 
   desc "search", "Search something! (e.g. all windows clients connected to 192.168.0.1 on port 22)"
+  method_option :src_os,      :type => :string, :alias => "-so",  :banner => "SRC_OS",      :desc => "source os filter"
+  method_option :dst_os,      :type => :string, :alias => "-do",  :banner => "DST_OS",      :desc => "destination os filter"
+  method_option :src_port,    :type => :string, :alias => "-sp",  :banner => "SRC_PORT",    :desc => "source port filter"
+  method_option :dst_port,    :type => :string, :alias => "-dp",  :banner => "DST_PORT",    :desc => "destination port filter"
+  method_option :src,         :type => :string, :alias => "-s",   :banner => "SRC_ADDRESS", :desc => "source filter"
+  method_option :dst,         :type => :string, :alias => "-d",   :banner => "DST_ADDRESS", :desc => "destination filter"
+  method_option :text,        :type => :string, :alias => "-t",   :banner => "TEXT",        :desc => "text filter"
   def search
   end
   
