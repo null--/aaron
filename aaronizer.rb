@@ -1,10 +1,10 @@
 #!/usr/bin/env ruby
 
 require 'thor'
-require './netmap-defs.rb'
+require './aaron-defs.rb'
 require './mastermind.rb'
 
-class Netmapolizer < Thor
+class Aaronizer < Thor
   attr_reader :master
   
   def initialize(*args)
@@ -17,21 +17,23 @@ class Netmapolizer < Thor
     help(nil)
   end
   
-  desc "help [command]", "help_banner"
-  def help(command)
+  desc "help [command]", "Print more information about a command (task)"
+  def help(command = nil)
     super(command)
     
-    puts <<-BANNER
+    if command.nil? then
+      puts <<-BANNER
 Examples:
   1. Print all windows clients connected to 192.168.0.1 on port 22
-    ./netmapolizer.rb search --dst 192.168.0.1 --dst_port 22 --src_os win
-    BANNER
+    ./aaronizer.rb search --dst 192.168.0.1 --dst_port 22 --src_os win
+      BANNER
+    end
   end
   
   class_option :verbose,  :type => :boolean, :default => false, :alias => "-v",
       :desc => "verbose mode"
   class_option :nmgfile,  :type => :string, :default => 'test.nmg', :alias => "-i", :required => true,
-      :desc => "An existing #{$nm_ext}"
+      :desc => "An existing #{$aa_ext}"
 
   desc "search", "Search something! (e.g. all windows clients connected to 192.168.0.1 on port 22)"
   method_option :src_os,      :type => :string, :alias => "-so",  :banner => "SRC_OS",      :desc => "source os filter"
@@ -60,4 +62,4 @@ Examples:
   end
 end
 
-Netmapolizer.start
+Aaronizer.start

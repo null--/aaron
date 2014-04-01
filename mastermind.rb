@@ -27,11 +27,11 @@ class MasterMind
   attr_reader   :loopback
   
   def puterr(t)
-    puts "#{$nm_ban["err"]} #{t}"
+    puts "#{$aa_ban["err"]} #{t}"
   end
 
   def putinf(t)
-    puts "#{$nm_ban["inf"]} #{t}" if @verbose
+    puts "#{$aa_ban["inf"]} #{t}" if @verbose
   end
  
   def initialize(verbose, args={})
@@ -44,11 +44,11 @@ class MasterMind
     @hostnode = nil
     @loopback = args[:loopback]
     
-    puts "#{$nm_ban["msm"]} I want it all and I want it now!" if @verbose
+    puts "#{$aa_ban["msm"]} I want it all and I want it now!" if @verbose
   end
   
   def load_graph(path, must_exists = false)
-    puts "#{$nm_ban["msm"]} Loading #{path}..." if @verbose
+    puts "#{$aa_ban["msm"]} Loading #{path}..." if @verbose
     
     if File.exists?(path) and (@update or must_exists) then
       @graph = GraphViz.parse( path )
@@ -58,10 +58,10 @@ class MasterMind
     if @graph.nil? and not must_exists then
       @graph = GraphViz.new("netmap", )
       
-      @graph.node["shape"]  = $nm_node_shape
+      @graph.node["shape"]  = $aa_node_shape
       @graph.node["color"]  = $clr_node
       @graph["color"]       = $clr_graph
-      @graph["layout"]      = $nm_graph_layout
+      @graph["layout"]      = $aa_graph_layout
       @graph["ranksep"]     = "3.0"
       @graph["ratio"]       = "auto"
     end
@@ -71,7 +71,7 @@ class MasterMind
       raise "DEAD END!"
     end
   # rescue => details
-    # puts "#{$nm_ban["err"]} load_graph failed! #{details}" if @verbose
+    # puts "#{$aa_ban["err"]} load_graph failed! #{details}" if @verbose
   end
 
   def save_graph(path)
@@ -87,7 +87,7 @@ class MasterMind
     
     @graph.output( :canon => path )
   # rescue => details
-  #   puts "#{$nm_ban["err"]} save_graph failed! #{details}" if @verbose
+  #   puts "#{$aa_ban["err"]} save_graph failed! #{details}" if @verbose
   end
 
   def save_png(path)
@@ -164,7 +164,7 @@ class MasterMind
       c = @hostnode
     else
       c = find_node(name2)
-      c = @graph.add_nodes(name2, "shape" => $nm_node_shape, "style" => "filled", "color" => $clr_cnode) if c.nil?
+      c = @graph.add_nodes(name2, "shape" => $aa_node_shape, "style" => "filled", "color" => $clr_cnode) if c.nil?
     end
     
     #TODO: it's not geek
@@ -183,14 +183,14 @@ class MasterMind
 
   def add_image
     @hostnode.set do |nd|
-      nd.image = $nm_img_dir + @os + ".png"
+      nd.image = $aa_img_dir + @os + ".png"
     end
   end
   
   def parse_netstat(data)
-    rex = $nm_netstat_regex[@os]
+    rex = $aa_netstat_regex[@os]
     if !rex then
-      puts "#{$nm_ban["err"]} Unkown OS"
+      puts "#{$aa_ban["err"]} Unkown OS"
       return
     end
     
@@ -219,7 +219,7 @@ class MasterMind
     #TODO it's not geek
     if @hostnode.nil? then
       @hostnode = @graph.add_nodes(@hostinfo.strip, 
-          "shape" => $nm_node_shape, 
+          "shape" => $aa_node_shape, 
           "style" => "filled", 
           "color" => $clr_pnode, 
           $deep_tag => $deepinfo)

@@ -8,10 +8,10 @@
 
 require 'thor'
 require 'net/ssh'
-require './netmap-defs.rb'
+require './aaron-defs.rb'
 require './mastermind.rb'
 
-class NetMap < Thor
+class Aaron < Thor
   attr_reader   :master
 
   def initialize(*args)
@@ -19,8 +19,6 @@ class NetMap < Thor
     puts "#{$nfo}"
     
     @master = MasterMind.new(options[:verbose], options)
-  rescue
-    help(nil)
   end
   
   no_commands do
@@ -35,27 +33,29 @@ class NetMap < Thor
     end
   end
 
-  desc "help [command]", "help_banner"
-  def help(command)
+  desc "help [command]", "Print more information about a command (task)"
+  def help(command = nil)
     super(command)
     
-    puts <<-BANNER
+    if command.nil? then
+      puts <<-BANNER
 Examples:
   1. Create a new diagram from a netstat output file, then generate report in png and pdf formats
-    ./netmap.rb file netstat.out --verbose --png --pdf --output test.nmg
+    ./aaron.rb file netstat.out --verbose --png --pdf --output test.nmg
   2. Update an existing diagram from a netstat output file
-    ./netmap.rb file netstat-win.out --verbose --png --pdf --os win --output test.nmg --update
+    ./aaron.rb file netstat-win.out --verbose --png --pdf --os win --output test.nmg --update
   3. Use SSH to create a diagram (against a linux machine)
-    ./netmap.rb ssh localhost --user temp --pass temp --verbose --png --pdf --output test.nmg
+    ./aaron.rb ssh localhost --user temp --pass temp --verbose --png --pdf --output test.nmg
   4. More advanced SSH (against a windows machine)
-    ./netmap.rb ssh example.com --user root --pass toor --verbose --png --pdf --output test.nmg --os win --port 80 --key ~/.ssh/id_rsa --update
-  5. Pipe netstat result into netmap
-    cat netstat-win.out | ./netmap.rb stdin --verbose --png --pdf --os linux --output test.nmg
+    ./aaron.rb ssh example.com --user root --pass toor --verbose --png --pdf --output test.nmg --os win --port 80 --key ~/.ssh/id_rsa --update
+  5. Pipe netstat result into aaron
+    cat netstat-win.out | ./aaron.rb stdin --verbose --png --pdf --os linux --output test.nmg
     or
-    netstat -antu | ./netmap.rb stdin --verbose --png --pdf --os linux --output test.nmg
+    netstat -antu | ./aaron.rb stdin --verbose --png --pdf --os linux --output test.nmg
   6. Execute command on remote machine via SMB (psexec)
-    ./netmap.rb psexec 192.168.13.50 --os win --user Administrator --pass 123456 --domain WORKGROUP --verbose --png --pdf --output test.nmg
-    BANNER
+    ./aaron.rb psexec 192.168.13.50 --os win --user Administrator --pass 123456 --domain WORKGROUP --verbose --png --pdf --output test.nmg
+      BANNER
+    end
   end
   
   class_option :verbose,  :type => :boolean, :default => false, :alias => "-v",
@@ -64,19 +64,19 @@ Examples:
       :desc => "Update an existing diagram"
   class_option :backup,  :type => :boolean, :default => false, :alias => "-b",
       :desc => "Backup an existing diagram"
-  class_option :os,       :type => :string,  :default => "#{$nm_os[0]}", :required => true,
+  class_option :os,       :type => :string,  :default => "#{$aa_os[0]}", :required => true,
       :banner => "TARGET_OS",
       :desc => "Values: #{$os}"
   class_option :loopback,      :type => :boolean, :default => false,
       :desc => "Draw loopback connections (e.g. localhost-to-localhost)"
-  class_option :output,   :type => :string, :alias => "-o", :required => true,
+  class_option :output,   :type => :string, :alias => "-o", :required => true, :default => "test.#{$aa_ext}",
       :banner => "OUTPUT_FILE"
   class_option :png,      :type => :boolean, :default => false,
       :desc => "Save graph in png format, too"
   class_option :pdf,      :type => :boolean, :default => false,
       :desc => "Save graph in pdf format, too"
       
-  desc "stdin", "Pipe netstat result into netmap"
+  desc "stdin", "Pipe netstat result into aaron"
   def stdin
     data = ""
     inp = ""
@@ -113,7 +113,7 @@ Examples:
     :desc => "Prompts for passphrase if needed."
   # method_option :passphrase,  :type => :string, :alias => "-pp", :banner => "SSH_KEY_PASS_PHRASE"
   def ssh(host)
-    puts "#{$nm_ban["inf"]} ssh: #{host}:#{options[:port]}, user=#{options[:user]}" if options[:verbose]
+    puts "#{$aa_ban["inf"]} ssh: #{host}:#{options[:port]}, user=#{options[:user]}" if options[:verbose]
     
     #note: :port must pass as last argument
     if options["key"].nil? then
@@ -123,13 +123,13 @@ Examples:
     end
 
     if not ssh.nil? then
-      puts "#{$nm_ban["inf"]} ssh: Connection Established, OS: #{options[:os]}" if options[:verbose]
-      hs = ssh.exec!( $nm_hostname[ options[:os] ] )
-      ov = ssh.exec!( $nm_os_ver[ options[:os] ] )      
-      ad = ssh.exec!( $nm_adapter[ options[:os] ] )
-      rt = ssh.exec!( $nm_route[ options[:os] ] )            
-      ns = ssh.exec!( $nm_netstat[ options[:os] ] )
-      puts "#{$nm_ban["inf"]} netstat result:\n#{ns}" if options[:verbose]
+      puts "#{$aa_ban["inf"]} ssh: Connection Established, OS: #{options[:os]}" if options[:verbose]
+      hs = ssh.exec!( $aa_hostname[ options[:os] ] )
+      ov = ssh.exec!( $aa_os_ver[ options[:os] ] )      
+      ad = ssh.exec!( $aa_adapter[ options[:os] ] )
+      rt = ssh.exec!( $aa_route[ options[:os] ] )            
+      ns = ssh.exec!( $aa_netstat[ options[:os] ] )
+      puts "#{$aa_ban["inf"]} netstat result:\n#{ns}" if options[:verbose]
       prologue
       master.add_to_hostinfo ( hs )
       master.add_to_hostinfo ( ov )
@@ -141,27 +141,27 @@ Examples:
     end
   
   # rescue => details
-    # puts "#{$nm_ban["err"]} SSH Failed #{details}"    
+    # puts "#{$aa_ban["err"]} SSH Failed #{details}"    
   end
 
-  desc "psexec {HOST}", "#{$nm_ban["exp"]} Execute commands via a 'psexec' connection the remote (Windows) host (requires metasploit)"
+  desc "psexec {HOST}", "#{$aa_ban["exp"]} Execute commands via a 'psexec' connection the remote (Windows) host (requires metasploit)"
   method_option :user,        :type => :string,   :alias => "-l", :banner => "SMB_USERNAME", :require => true
   method_option :pass,        :type => :string,   :alias => "-p", :banner => "SMB_PASSWORD"
   method_option :domain,      :type => :string,   :default => "WORKGROUP", :alias => "-d", :banner => "SMB_DOMAIN"
   def psexec(host)
-    puts "#{$nm_ban["inf"]} psexec: host=#{host}, user=#{options[:user]}" if options[:verbose]
+    puts "#{$aa_ban["inf"]} psexec: host=#{host}, user=#{options[:user]}" if options[:verbose]
   
     cmd = "msfcli auxiliary/admin/smb/psexec_command RHOSTS='#{host}' SMBUser='#{options[:user]}'"
     cmd = cmd + " SMBPass='#{options[:pass]}'" if not options[:pass].nil?
     cmd = cmd + " SMBDomain='#{options[:domain]}'" if not options[:domain].nil?
     
-    hs = %x( #{cmd} COMMAND='#{$nm_hostname[ options[:os] ]}' E )
-    ov = %x( #{cmd} COMMAND='#{$nm_os_ver[ options[:os] ]}' E )
-    ad = %x( #{cmd} COMMAND='#{$nm_adapter[ options[:os] ]}' E )
-    rt = %x( #{cmd} COMMAND='#{$nm_route[ options[:os] ]}' E )
-    ns = %x( #{cmd} COMMAND='#{$nm_netstat[ options[:os] ]}' E )
+    hs = %x( #{cmd} COMMAND='#{$aa_hostname[ options[:os] ]}' E )
+    ov = %x( #{cmd} COMMAND='#{$aa_os_ver[ options[:os] ]}' E )
+    ad = %x( #{cmd} COMMAND='#{$aa_adapter[ options[:os] ]}' E )
+    rt = %x( #{cmd} COMMAND='#{$aa_route[ options[:os] ]}' E )
+    ns = %x( #{cmd} COMMAND='#{$aa_netstat[ options[:os] ]}' E )
     
-    puts "#{$nm_ban["inf"]} netstat result:\n#{ns}" if options[:verbose]
+    puts "#{$aa_ban["inf"]} netstat result:\n#{ns}" if options[:verbose]
     prologue
     master.add_to_hostinfo ( hs )
     master.add_to_hostinfo ( ov )
@@ -171,11 +171,11 @@ Examples:
     epilogue
   end
 
-  desc "adb", "#{$nm_ban["exp"]} Execute commands via an 'adb' shell (android)"
+  desc "adb", "#{$aa_ban["exp"]} Execute commands via an 'adb' shell (android)"
   def adb()
-    puts "#{$nm_ban["inf"]} adb" if options[:verbose]
+    puts "#{$aa_ban["inf"]} adb" if options[:verbose]
   end    
 end
 
-NetMap.start
+Aaron.start
 
