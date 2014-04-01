@@ -1,6 +1,6 @@
 aaron
 ======
-*In loving memory of tireless internet activist,* **"Aaron Swartz"** *.*
+*In loving memory of tireless internet activist,* **"Aaron Swartz"** *.*<br>
 Find a way to go *deep* inside your target network to get the "Arkenstone".<br>
 
 ##About
