@@ -1,5 +1,6 @@
-netmap
+aaron
 ======
+*In loving memory of tireless internet activist,* **"Aaron Swartz"** *.*
 Find a way to go *deep* inside your target network to get the "Arkenstone".<br>
 
 ##About
@@ -13,7 +14,7 @@ Any advanced hacking or black-box penetration testing project starts with a shor
 one of those known targets, you should use all the information found inside that target to find new targets.
 *Discovering* new HVTs is a key point for a successful security breach because you can go *deeper and deeper*.
 
-**netmap** and **netmapolizer** will help you do that in a more visual way!
+**aaron** and **aaronizer** will help you do that in a more visual way!
 
 ##Why?
 - You can understand data-flow inside your target network.
@@ -30,7 +31,7 @@ one of those known targets, you should use all the information found inside that
 ##TODO
 - png examples folder<br>
 - save hidden info on each node<br>
-- netmapolizer (+ os/port/ip filter): 2/5<br>
+- aaronizer (+ os/port/ip filter): 2/5<br>
 - ADB<br>
 - Solaris test<br>
 - BSD test<br>
