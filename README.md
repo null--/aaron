@@ -7,7 +7,7 @@ Find a way to go *deep* inside your target network to get the "Arkenstone".<br>
 Imagine those hard times that you were inside an unknown network trying to discover how things work by looking at anything, 
 just to find out a way to go *deeper and deeper* inside that **jungle of connected electronic devices**.  Going deeper means you need
 to find new targets, but how? Yes! That cool **netstat -an** command, shows valuable network information.<br>
-But, did you ever try to analyze 10000 lines of *netstat* result? THAT'S HELL OF HARD WORK! so you may use grep, awk, cut, sort, uniq and a bunch of | (pipes)
+But, did you ever try to analyze 10000 lines of *netstat* result? THAT'S HELL OF A HARD WORK! so you may use grep, awk, cut, sort, uniq and a bunch of | (pipes)
 trying to make one those magical single line commands and reduce the netstat result to 1000 lines! That's geek but you need something more visual!
 
 Any advanced hacking or black-box penetration testing project starts with a short list of known targets. After exploiting
