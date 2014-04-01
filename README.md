@@ -2,6 +2,7 @@ aaron
 ======
 *In loving memory of tireless internet activist,* **"Aaron Swartz"** *.*<br>
 Find a way to go *deep* inside your target network to get the "Arkenstone".<br>
+Designed for hacktists, professional penetration testers and APT teams.
 
 ##About
 Imagine those hard times that you were inside an unknown network trying to discover how things work by looking at anything, 
