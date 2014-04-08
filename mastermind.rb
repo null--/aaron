@@ -85,7 +85,8 @@ class MasterMind
     #   ed.delete("tail_lp") if not ed["tail_lp"].nil?
     # end
     
-    @graph.output( :canon => path )
+    @graph.output( $nmg_format => path )
+    # @graph.output( "dot" => path )
   # rescue => details
   #   puts "#{$aa_ban["err"]} save_graph failed! #{details}" if @verbose
   end
@@ -105,6 +106,7 @@ class MasterMind
   def add_to_hostinfo(data)
     # not geek
     @hostinfo = @hostinfo + data.strip + "\n" if not @hostinfo.include? data
+    @hostnode["label"] = @hostinfo if not @hostnode.nil?
     add_to_deepinfo(data)
   end
 
@@ -112,6 +114,7 @@ class MasterMind
     putinf "DEEPINFO: #{data}"
     # not geek
     @deepinfo = @deepinfo + data + "\n" if not @deepinfo.include? data
+    @hostnode[$deep_tag] = @deepinfo if not @hostnode.nil?
   end
 
   def find_node(text)
@@ -164,7 +167,7 @@ class MasterMind
       c = @hostnode
     else
       c = find_node(name2)
-      c = @graph.add_nodes(name2, "shape" => $aa_node_shape, "style" => "filled", "color" => $clr_cnode) if c.nil?
+      c = @graph.add_nodes(name2, "shape" => $aa_node_shape, "style" => "filled", "color" => $clr_cnode, $deep_tag => "N/A") if c.nil?
     end
     
     #TODO: it's not geek
@@ -217,12 +220,12 @@ class MasterMind
     end
 
     #TODO it's not geek
-    if @hostnode.nil? then
+    if @hostnode.nil? then      
       @hostnode = @graph.add_nodes(@hostinfo.strip, 
           "shape" => $aa_node_shape, 
           "style" => "filled", 
           "color" => $clr_pnode, 
-          $deep_tag => $deepinfo)
+          $deep_tag => @deepinfo) # FUCK! stupid $
     else
       @hostnode.set do |nd|
         nd.color = $clr_pnode

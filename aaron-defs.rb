@@ -16,13 +16,15 @@ NFO
 $lastnfo = <<-LASTNFO
 ==============
 Does PDF or PNG output seem ugly? Do you love that old school black and white shell?
-Try #{$aaronizer_name}, NOW!
+Try #{$aaronizer_name} and analyse the output "in depth"!
 LASTNFO
 
 $aa_img_dir     = "./img/"
 
 $aa_ext         = ".nmg"
 
+$nmg_format     = "canon"
+# $nmg_format     = "dot"
 $deep_tag       = "comment"
 $aa_node_shape  = "folder"
 $aa_graph_layout= "circo"

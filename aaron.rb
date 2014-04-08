@@ -142,8 +142,8 @@ Examples:
       ssh.close()
     end
   
-  rescue => details
-    puts "#{$aa_ban["err"]} SSH Failed #{details}"    
+  # rescue => details
+  #  puts "#{$aa_ban["err"]} SSH Failed #{details}"    
   end
 
   desc "psexec {HOST}", "#{$aa_ban["exp"]} Execute commands via a 'psexec' connection the remote (Windows) host (requires metasploit)"
