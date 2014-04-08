@@ -30,14 +30,10 @@ one of those known targets, you should use all the information found inside that
 - Export graphs in png and pdf formats
 
 ##TODO
-- From Graphviz to ActiveRecord
-- -- add image
-- -- info and deepinfo
-- -- general test
+- Improve graphviz output
 - png examples folder<br>
 - save hidden info on each node<br>
-- aaron search (+ os/port/ip filter): 2/5<br>
+- aaron search + regex <br>
 - ADB<br>
-- Solaris test<br>
 - BSD test<br>
-- Find os type automatically
+- Find os type automatically (--os=auto)

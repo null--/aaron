@@ -199,20 +199,36 @@ Examples:
   end
   
   desc "search", "Search something! (e.g. all windows clients connected to 192.168.0.1 on port 22)"
-  method_option :src_os,      :type => :string, :alias => "-so",  :banner => "SRC_OS",      :desc => "source os filter"
-  method_option :dst_os,      :type => :string, :alias => "-do",  :banner => "DST_OS",      :desc => "destination os filter"
+  method_option :src_os,      :type => :string, :alias => "-sos",  :banner => "SRC_OS",      :desc => "source os filter"
+  method_option :dst_os,      :type => :string, :alias => "-dos",  :banner => "DST_OS",      :desc => "destination os filter"
   method_option :src_port,    :type => :string, :alias => "-sp",  :banner => "SRC_PORT",    :desc => "source port filter"
   method_option :dst_port,    :type => :string, :alias => "-dp",  :banner => "DST_PORT",    :desc => "destination port filter"
   method_option :src,         :type => :string, :alias => "-s",   :banner => "SRC_ADDRESS", :desc => "source filter"
   method_option :dst,         :type => :string, :alias => "-d",   :banner => "DST_ADDRESS", :desc => "destination filter"
   method_option :text,        :type => :string, :alias => "-t",   :banner => "TEXT",        :desc => "text filter"
+  method_option :nmgfile,  :type => :string, :default => 'test.nmg', :alias => "-i", :required => true,
+      :desc => "An existing #{$aa_ext}"
   def search
+    @master.load_db(options[:nmgfile], true)
+    
+    @master.search(options[:src_os],
+                   options[:dst_os],
+                   options[:src_port],
+                   options[:dst_port],
+                   options[:src],
+                   options[:dst],
+                   options[:text])
+                   
   end
   
   desc "show", "Print more info about a HOST (some of them are not shown in png or pdf)"
   method_option :info,        :type => :string, :alias => "-i", :banner => "HOST", :desc => "Show all information about a host"
   method_option :hosts,       :type => :boolean, :default => false, :alias => "-a", :desc => "Show all hosts"
+  method_option :nmgfile,  :type => :string, :default => 'test.nmg', :alias => "-i", :required => true,
+      :desc => "An existing #{$aa_ext}"
   def show
+    @master.load_db(options[:nmgfile], true)
+    
     if options[:hosts] then
       @master.print_hosts
     elsif not options[:info].nil? then
@@ -222,6 +238,7 @@ Examples:
   
   desc "edit", "Edit info of a HOST"
   def edit(host)
+    @master.load_db(options[:nmgfile], true)
   end
 end
 

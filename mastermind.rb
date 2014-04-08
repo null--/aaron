@@ -9,8 +9,8 @@ SQLite DB:
    | Host           |           | Edge            |                                         
    +----------------+           +-----------------+                                         
    | id (PK)        |           | id (PK)         |                                          
-   | name           |           | src_ip    (FK)  |                                          
-   | info           |           | dst_ip    (FK)  |                                          
+   | name           |           | src_ip_id (FK)  |                                          
+   | info           |           | dst_ip_id       |                                          
    | deepinfo       |           | src_tag         |                                       
    | comment        |           | dst_tag         |                                         
    |                |           | proto           |                                         
@@ -34,7 +34,7 @@ SQLite DB:
 =end
 
 class Host < ActiveRecord::Base
-  has_many :ips, :class_name => "IP"
+  has_many :ips # , :class_name => "IP", :foreign_key => "host_id"
   
   def find_os
     return nil if self.info.nil?
@@ -49,16 +49,24 @@ class Host < ActiveRecord::Base
     
     nil
   end
+  
 end
 
-class IP < ActiveRecord::Base
-  belongs_to :host, :class_name => "Host"
-  has_many   :edges, :class_name => "Edge"
+class Ip < ActiveRecord::Base
+  belongs_to :host # , :class_name => "Host", :foreign_key => "host_id"
+  has_many   :start_edges , :class_name => "Edge", :foreign_key => "src_ip_id"
+  has_many   :end_edges , :class_name => "Edge", :foreign_key => "dst_ip_id"
+  
+  # def edges
+  #   return start_edges.concat end_edges if not start_edges.nil?
+  #   return end_edges.concat start_edges if not end_edges.nil?
+  #   nil
+  # end
 end
 
 class Edge < ActiveRecord::Base
-  belongs_to :ip_src, :class_name => "IP"
-  belongs_to :ip_dst, :class_name => "IP"
+  belongs_to :src_ip, :class_name => "Ip", :foreign_key => "src_ip_id"
+  belongs_to :dst_ip, :class_name => "Ip", :foreign_key => "dst_ip_id"
 end
 
 def rand_str
@@ -129,7 +137,7 @@ class MasterMind
       ActiveRecord::Base.logger = nil
     end
 
-    puts "#{$aa_ban["msm"]} I want it all and I want it now!"
+    puts "#{$aa_ban["msm"]} I want it all and I want it now!" if @verbose
   end
   
   def load_db(path, must_exists = false)
@@ -159,7 +167,7 @@ class MasterMind
       
       unless ActiveRecord::Base.connection.table_exists? 'ips'
         create_table :ips do |table|
-          table.column :host_id, :integer # FK
+          table.column :host_id,  :integer # FK
           table.column :addr,       :string
           table.column :comment,  :text
         end
@@ -167,8 +175,8 @@ class MasterMind
       
       unless ActiveRecord::Base.connection.table_exists? 'edges'
         create_table :edges do |table|
-          table.column :src_ip,   :integer # FK
-          table.column :dst_ip,   :integer # FK
+          table.column :src_ip_id,   :integer
+          table.column :dst_ip_id,   :integer
           table.column :src_tag,     :string
           table.column :dst_tag,     :string
           table.column :proto,    :string
@@ -208,7 +216,7 @@ class MasterMind
     end
     
     # add ips
-    ips = IP.find(:all)
+    ips = Ip.find(:all)
     ips.each do |ip|
       mn  = ip.addr
       mn  = mn + "\n" + ip.host.name     if not ip.host.nil? and not ip.host.name.nil?
@@ -229,8 +237,8 @@ class MasterMind
     edges.each do |e|
       color = $clr_tcp
       color = $clr_udp if e.proto.downcase == "udp"
-      src = IP.find(e.src_ip).addr
-      dst = IP.find(e.dst_ip).addr
+      src = e.src_ip.addr
+      dst = e.dst_ip.addr
       c = @graph.add_edges(src, dst, "headlabel" => e.dst_tag, "taillabel" => e.src_tag, "labeldistance" => "2", "color" => color)
     end
   end
@@ -283,7 +291,7 @@ class MasterMind
     # find host node
     @host_node = nil
     hostips.each do |hip|
-      nip = IP.find(:first, :conditions => {:addr => hip})
+      nip = Ip.find(:first, :conditions => {:addr => hip})
       if not nip.nil? then
         @host_node = nip.host
         break
@@ -318,7 +326,7 @@ class MasterMind
       end
       
       if not exists then
-        ip = IP.new
+        ip = Ip.new
         ip.host_id = @host_node.id
         ip.addr = hip
         ip.save
@@ -332,16 +340,16 @@ class MasterMind
       cur = cur + 1
       STDOUT.write "\rProcessing connections:\t#{cur}/#{total}\t#{cur.percent_of(total)}"
       # add new IP
-      left  = IP.find(:first, :conditions => {:addr => cn[:src]})
+      left  = Ip.find(:first, :conditions => {:addr => cn[:src]})
       if left.nil? then
-        left = IP.new
+        left = Ip.new
         left.host_id = nil
         left.addr = cn[:src]
         left.save
       end
-      right = IP.find(:first, :conditions => {:addr => cn[:dst]})
+      right = Ip.find(:first, :conditions => {:addr => cn[:dst]})
       if right.nil? then
-        right = IP.new
+        right = Ip.new
         right.host_id = nil
         right.addr = cn[:dst]
         right.save
@@ -352,8 +360,8 @@ class MasterMind
       if not Edge.find(:first, :conditions => {
           :src_tag => cn[:sport], 
           :dst_tag => cn[:dport], 
-          :src_ip => left.id, 
-          :dst_ip => right.id}) 
+          :src_ip_id => left.id, 
+          :dst_ip_id => right.id}) 
       then
         e = Edge.new
         if cn.names.include?("proto") then
@@ -362,9 +370,11 @@ class MasterMind
           e.proto = "N/A"
         end
         e.src_tag = cn[:sport]
-        e.src_ip = left.id
+        e.src_ip_id = left.id
+        
         e.dst_tag = cn[:dport]
-        e.dst_ip = right.id
+        e.dst_ip_id = right.id
+        
         e.comment = cn[:type] if cn.names.include? "type"
         e.save
       end
@@ -374,9 +384,25 @@ class MasterMind
   
   def print_hosts
     i = 1
-    @graph.each_node do |nd, nid|
-      puts "================="
-      puts "Host #{i}:\n#{nd}"
+    seen = Array.new
+    
+    Ip.find(:all).each do |ip|
+      if not ip.host.nil? and not ip.host.name.nil? then
+        next if seen.include? ip.host.name
+        
+        puts "================="
+        puts "Host #{i}: #{ip.host.name}" 
+        seen << ip.host.name
+        
+        ip.host.ips.each do |mip|
+          puts mip.addr
+        end
+      else
+        puts "================="
+        puts "Host #{i}:"    
+        puts ip.addr
+      end
+      
       # puts "================="
       
       i = i + 1
@@ -384,11 +410,92 @@ class MasterMind
   end
   
   def print_info(host)
-    nd = find_node(host.strip)
-    puterr "HOST NOT FOUND" if nd.nil?
-    return if nd.nil?
-    puts nd["label"].norm.strip
-    puts  "================="
-    puts nd[$deep_tag].norm if not nd[$deep_tag].nil?
+    ip = Ip.find(:first, :conditions => {:addr => host})
+    puterr "HOST NOT FOUND" if ip.nil?
+    return if ip.nil?
+    
+    if ip.host.nil? then
+      putinf "No Info!"
+      return
+    end
+    
+    puts "Name:\n" + ip.host.name + "=================" unless ip.host.name.nil?
+    puts "Info:\n" + ip.host.info + "=================" unless ip.host.info.nil?
+    puts "Deepinfo:\n" + ip.host.deepinfo + "=================" unless ip.host.deepinfo.nil?
+    puts "Comment:\n" + ip.host.comment + "=================" unless ip.host.comment.nil?
+  end
+  
+  def search(sos, dos, sp, dp, src, dst, txt)
+    ips = Ip.find(:all)
+    
+    not_found = true
+    
+    ips.each do |ip|
+      es = ip.start_edges
+      next if es.nil?
+      
+      sos_m = sos.nil?
+      dos_m = dos.nil?
+      sp_m = sp.nil?
+      dp_m = dp.nil?
+      src_m = src.nil?
+      dst_m = dst.nil?
+      txt_m = txt.nil?
+      
+      es.each do |e|
+        # puts e.src_ip.addr
+        if e.src_tag == sp then
+          sp_m = true
+        end
+        
+        if e.dst_tag == dp then
+          dp_m = true
+        end
+        
+        if e.src_ip.addr == src then
+          sp_m = true
+        end
+        
+        if e.dst_ip.addr == dst then
+          dst_m = true
+        end
+        
+        if not e.src_ip.host.nil? and e.src_ip.host.find_os == sos then
+          src_m = true
+        end
+        
+        if not e.dst_ip.host.nil? and e.dst_ip.host.find_os == dos then
+          dst_m = true
+        end
+      end
+      
+      if not ip.host.nil? and ip.host.find_os == sos then
+        sos_m = true
+      end
+      
+      if not ip.host.nil? and not ip.host.name.nil? and ip.host.name.downcase.include? txt.downcase then
+        txt_m = true
+      end
+      
+      if not ip.host.nil? and not ip.host.info.nil? and ip.host.info.downcase.include? txt.downcase then
+        txt_m = true
+      end
+      
+      if not ip.host.nil? and not ip.host.deepinfo.nil? and ip.host.deepinfo.downcase.include? txt.downcase then
+        txt_m = true
+      end
+      
+      if not ip.host.nil? and not ip.host.comment.nil? and ip.host.name.comment.include? txt.downcase then
+        txt_m = true
+      end
+      
+      # puts sos_m.to_s + dos_m.to_s + sp_m.to_s + dp_m.to_s + src_m.to_s + dst_m.to_s + txt_m.to_s
+      if sos_m and dos_m and sp_m and dp_m and src_m and dst_m and txt_m then
+        not_found = false
+        puts ip.addr
+      end
+    end
+    
+    puts "Nothing matched your search query!" if not_found
   end
 end

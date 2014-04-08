@@ -42,7 +42,7 @@ $aa_ban = {
   "err"    => "[ERROR]",
   "inf"    => "[INFO]",
   "war"    => "[WARNING]",
-  "msm"    => "[MASTER]"
+  "msm"    => "[aaron::MASTER]"
 }
 
 #TODO: detect os automatically
