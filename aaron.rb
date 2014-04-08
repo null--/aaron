@@ -42,14 +42,14 @@ class Aaron < Thor
     if command.nil? then
       puts <<-BANNER
 Examples:
-  10. Create a new diagram from a netstat output file, then generate report in png and pdf formats
+  10. Create a new diagram (or update and exsisting one) from a netstat output file, then generate report in png and pdf formats
     ./aaron.rb file netstat.out --verbose --png --pdf --output test.nmg
-  11. Update an existing diagram from a netstat output file
-    ./aaron.rb file netstat-win.out --verbose --png --pdf --os win --output test.nmg --update
+  11. Create a new diagram (remove old #{$aa_ext} file) from a netstat output file
+    ./aaron.rb file netstat-win.out --verbose --png --pdf --os win --output test.nmg --new
   20. Use SSH to create a diagram (against a linux machine)
     ./aaron.rb ssh localhost --user temp --pass temp --verbose --png --pdf --output test.nmg
   21. More advanced SSH (against a windows machine)
-    ./aaron.rb ssh example.com --user root --pass toor --verbose --png --pdf --output test.nmg --os win --port 80 --key ~/.ssh/id_rsa --update
+    ./aaron.rb ssh example.com --user root --pass toor --verbose --png --pdf --output test.nmg --os win --port 80 --key ~/.ssh/id_rsa --new
   30. Pipe netstat result into aaron
     cat netstat-win.out | ./aaron.rb stdin --verbose --png --pdf --os linux --output test.nmg
     or
@@ -64,8 +64,8 @@ Examples:
   
   class_option :verbose,  :type => :boolean, :default => false, :alias => "-v",
       :desc => "verbose mode"
-  class_option :update,  :type => :boolean, :default => false, :alias => "-u",
-      :desc => "Update an existing diagram"
+  class_option :new,  :type => :boolean, :default => false, :alias => "-u",
+      :desc => "Remove an existing project and create a new one"
   class_option :backup,  :type => :boolean, :default => false, :alias => "-b",
       :desc => "Backup an existing diagram"
   class_option :loopback,      :type => :boolean, :default => false,

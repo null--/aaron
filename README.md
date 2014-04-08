@@ -30,9 +30,7 @@ one of those known targets, you should use all the information found inside that
 - Export graphs in png and pdf formats
 
 ##TODO
-- Improve graphviz output
 - png examples folder<br>
-- save hidden info on each node<br>
 - aaron search + regex <br>
 - ADB<br>
 - BSD test<br>

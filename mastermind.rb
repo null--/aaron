@@ -122,7 +122,8 @@ class MasterMind
   def initialize(verbose, args={})
     @verbose = verbose
     @os = args[:os]
-    @update = args[:update] or false
+    @update = true
+    @update = false if args[:new]
     @backup = args[:backup] or false
     @loopback = args[:loopback]
     @dead = args[:dead] or false
@@ -145,7 +146,7 @@ class MasterMind
     
     if not @update and not must_exists and not @backup then
       putinf "Removing existing project"
-      FileUtils.rm(path)
+      FileUtils.rm(path) if File.exists? path
     end
     # TODO: update, backup
     
@@ -215,21 +216,36 @@ class MasterMind
       host_ips << hip.addr
     end
     
+    # add hosts
+    hosts_lbl = Array.new
+    hosts = Host.find(:all)
+    hosts.each do |h|
+      mn  = ""
+      mn = mn + h.name unless h.name.nil?
+      mos = h.find_os
+      
+      unless h.ips.nil? then
+        h.ips.each do |hip|
+          mn = mn + "\n" + hip.addr
+        end
+      end
+      
+      hosts_lbl << mn
+      
+      if not mos.nil? then
+        c = @graph.add_nodes(mn, "shape" => $aa_node_shape, "style" => "filled", "color" => $clr_cnode, :image => $aa_img_dir + @os + ".png")
+      else
+        c = @graph.add_nodes(mn, "shape" => $aa_node_shape, "style" => "filled", "color" => $clr_cnode)
+      end
+    end
+    
     # add ips
     ips = Ip.find(:all)
     ips.each do |ip|
+      next unless ip.host.nil?
       mn  = ip.addr
-      mn  = mn + "\n" + ip.host.name     if not ip.host.nil? and not ip.host.name.nil?
-      mos = ip.host.find_os  if not ip.host.nil?
       
-      if host_ips.include? ip.addr then
-        c = @graph.add_nodes(ip.addr, "label" => mn, "shape" => $aa_node_shape, "style" => "filled", "color" => $clr_cnode, :image => $aa_img_dir + @os + ".png")
-      elsif not ip.host.nil? and not mos.nil? then
-        puts mos
-        c = @graph.add_nodes(ip.addr, "label" => mn, "shape" => $aa_node_shape, "style" => "filled", "color" => $clr_cnode, :image => $aa_img_dir + mos + ".png")
-      else
-        c = @graph.add_nodes(ip.addr, "label" => mn, "shape" => $aa_node_shape, "style" => "filled", "color" => $clr_cnode)
-      end
+      c = @graph.add_nodes(ip.addr, "label" => mn, "shape" => $aa_node_shape, "style" => "filled", "color" => $clr_cnode)
     end
     
     # add edges
@@ -237,8 +253,15 @@ class MasterMind
     edges.each do |e|
       color = $clr_tcp
       color = $clr_udp if e.proto.downcase == "udp"
+      
       src = e.src_ip.addr
       dst = e.dst_ip.addr
+      
+      hosts_lbl.each do |lbl|
+        src = lbl if lbl.include? src
+        dst = lbl if lbl.include? dst
+      end
+      
       c = @graph.add_edges(src, dst, "headlabel" => e.dst_tag, "taillabel" => e.src_tag, "labeldistance" => "2", "color" => color)
     end
   end
