@@ -1,5 +1,55 @@
 require 'graphviz'
 require 'fileutils'
+require 'active_record'
+
+=begin
+SQLite DB:
+                                                                                            
+   +----------------+           +-----------------+                                         
+   | Host           |           | Edge            |                                         
+   +----------------+           +-----------------+                                         
+   | id (PK)        |           | id (PK)         |                                          
+   | name           |           | src_ip    (FK)  |                                          
+   | info           |           | dst_ip    (FK)  |                                          
+   | deepinfo       |           | src_tag         |                                       
+   | comment        |           | dst_tag         |                                         
+   |                |           | proto           |                                         
+   |                |           | comment         |                                         
+   +----------------+           +-----------------+
+          ^                          |
+          |                          |
+          |                          |
+          |    +----------------+    |
+          |    | IP             |    |
+          |    +----------------+    |
+          |    | id (PK)        |<---+
+          +----| host_id (FK)   |
+               | addr           |
+               | comment        |
+               |                |
+               |                |
+               |                |
+               +----------------+
+                                                                                            
+=end
+
+class Host < ActiveRecord::Base
+  has_many :ips
+end
+
+class IP < ActiveRecord::Base
+  belongs_to :host
+  has_many   :edges
+end
+
+class Edge < ActiveRecord::Base
+  belongs_to :ip_src, :class_name => "IP"
+  belongs_to :ip_dst, :class_name => "IP"
+end
+
+def rand_str
+  (0...8).map { (65 + rand(26)).chr }.join
+end
 
 class GraphViz::Types::LblString
   def norm
@@ -17,14 +67,13 @@ end
 
 class MasterMind
   attr_reader   :graph
-  attr_reader   :verbose
-  attr_reader   :os
-  attr_reader   :update
-  attr_reader   :backup
-  attr_accessor :hostinfo
-  attr_reader   :hostnode
-  attr_reader   :deepinfo
-  attr_reader   :loopback
+  attr_accessor :verbose
+  attr_accessor :os
+  attr_accessor :update
+  attr_accessor :backup
+  attr_accessor :loopback
+  
+  @db_nmg
   
   def puterr(t)
     puts "#{$aa_ban["err"]} #{t}"
@@ -39,155 +88,109 @@ class MasterMind
     @os = args[:os]
     @update = args[:update] or false
     @backup = args[:backup] or false
-    @hostinfo = ""
-    @deepinfo = ""
-    @hostnode = nil
     @loopback = args[:loopback]
+    @graph = nil
     
+    ActiveRecord::Base.logger = Logger.new(File.open('debug.log', 'w'))
+
     puts "#{$aa_ban["msm"]} I want it all and I want it now!" if @verbose
   end
   
-  def load_graph(path, must_exists = false)
+  def load_db(path, must_exists = false)
     puts "#{$aa_ban["msm"]} Loading #{path}..." if @verbose
     
-    if File.exists?(path) and (@update or must_exists) then
-      @graph = GraphViz.parse( path )
-      puterr "Failed to load diagram" if @graph.nil?
-    end
+    FileUtils.rm(path) if not @update and not must_exists and not @backup
+    # TODO: update, backup
     
-    if @graph.nil? and not must_exists then
-      @graph = GraphViz.new("netmap", )
+    ActiveRecord::Base.establish_connection(
+      :adapter  => 'sqlite3',
+      :database => path
+      # :database => ':memory:'
+    )
+    
+    ActiveRecord::Schema.define do
+      unless ActiveRecord::Base.connection.tables.include? 'host'
+        create_table :hosts do |table|
+          table.column :name,     :string
+          table.column :info,     :string
+          table.column :deepinfo, :text
+          table.column :comment,  :text
+        end
+      end
       
-      @graph.node["shape"]  = $aa_node_shape
-      @graph.node["color"]  = $clr_node
-      @graph["color"]       = $clr_graph
-      @graph["layout"]      = $aa_graph_layout
-      @graph["ranksep"]     = "3.0"
-      @graph["ratio"]       = "auto"
-    end
-    
-    if @graph.nil? and must_exists then
-      puterr "Failed to load graph"
-      raise "DEAD END!"
+      unless ActiveRecord::Base.connection.tables.include? 'ip'
+        create_table :ips do |table|
+          table.column :host_id, :integer # FK
+          table.column :addr,       :string
+          table.column :comment,  :text
+        end
+      end
+      
+      unless ActiveRecord::Base.connection.tables.include? 'edge'
+        create_table :edges do |table|
+          table.column :src_ip,   :integer # FK
+          table.column :dst_ip,   :integer # FK
+          table.column :src_tag,     :string
+          table.column :dst_tag,     :string
+          table.column :proto,    :string
+          table.column :comment,  :text
+        end
+      end
     end
   # rescue => details
     # puts "#{$aa_ban["err"]} load_graph failed! #{details}" if @verbose
   end
-
-  def save_graph(path)
-    if File.exists?(path) and @backup then
-      FileUtils.mv(path, "#{path}.#{Time.now}.bak")
+  
+  def new_graph
+    @graph = GraphViz.new("netmap",)
+    
+    @graph.node["shape"]  = $aa_node_shape
+    @graph.node["color"]  = $clr_node
+    @graph["color"]       = $clr_graph
+    @graph["layout"]      = $aa_graph_layout
+    @graph["ranksep"]     = "3.0"
+    @graph["ratio"]       = "auto"
+    
+    if @graph.nil? then
+      puterr "Failed to create graph"
+      # raise "DEAD END!"
+    end
+  end
+  
+  def draw_graph
+    new_graph
+    
+    return if @graph.nil?
+    
+    # add ips
+    ips = IP.find(:all)
+    ips.each do |ip|
+      c = @graph.add_nodes(ip.addr, "shape" => $aa_node_shape, "style" => "filled", "color" => $clr_cnode)
     end
     
-    # @graph.each_edge do |ed|
-    #   puts ed["head_lp"].to_s
-    #   ed.delete("head_lp") if not ed["head_lp"].nil?
-    #   ed.delete("tail_lp") if not ed["tail_lp"].nil?
-    # end
-    
-    @graph.output( $nmg_format => path )
-    # @graph.output( "dot" => path )
-  # rescue => details
-  #   puts "#{$aa_ban["err"]} save_graph failed! #{details}" if @verbose
+    # add edges
+    edges = Edge.find(:all)
+    edges.each do |e|
+      color = $clr_tcp
+      color = $clr_udp if e.proto.downcase == "udp"
+      src = IP.find(e.src_ip).addr
+      dst = IP.find(e.dst_ip).addr
+      c = @graph.add_edges(src, dst, "headlabel" => e.dst_tag, "taillabel" => e.src_tag, "labeldistance" => "2", "color" => color)
+    end
   end
-
+  
   def save_png(path)
+    draw_graph if @graph.nil?
     @graph.output( :png => "#{path}.png" )
-  rescue => details
-    puterr "save_png failed! #{details}"
+  # rescue => details
+    # puterr "save_png failed! #{details}"
   end
   
   def save_pdf(path)
+    draw_graph if @graph.nil?
     @graph.output( :pdf => "#{path}.pdf" )
-  rescue => details
-    puterr "save_pdf failed! #{details}"
-  end
-
-  def add_to_hostinfo(data)
-    # not geek
-    @hostinfo = @hostinfo + data.strip + "\n" if not @hostinfo.include? data
-    @hostnode["label"] = @hostinfo if not @hostnode.nil?
-    add_to_deepinfo(data)
-  end
-
-  def add_to_deepinfo(data)
-    putinf "DEEPINFO: #{data}"
-    # not geek
-    @deepinfo = @deepinfo + data + "\n" if not @deepinfo.include? data
-    @hostnode[$deep_tag] = @deepinfo if not @hostnode.nil?
-  end
-
-  def find_node(text)
-    return nil if text.nil? or @graph.nil?
-    
-    putinf "Find_Node: #{text}"
-    @graph.each_node do |nd, nid|
-      # puts "Node: #{nd}, ID:#{nid}"
-      if nd.include? text then
-        putinf "MATCHED!"
-        return nid
-      end
-    end
-    nil
-  end
-  
-  def find_edge(head, tail, name1, name2)
-    return nil if head.nil? or tail.nil?
-   
-    putinf "Find_Edge: #{head}/#{tail}, between #{name1}, #{name2}"
-
-    @graph.each_edge do |ed|
-      # puts ed.head_node.norm + " | " + ed.tail_node.norm
-
-      # puts "Edge: #{ed["headlabel"].norm}=#{head}/#{ed["taillabel"].norm}=#{tail}, #{ed.tail_node.norm}=#{name1} <--> #{ed.head_node.norm}=#{name2}"
-      # print (ed["headlabel"].norm.include? head), (ed["taillabel"].norm.include? tail), (ed.head_node.include? name1), (ed.tail_node.include? name2), "\n"
-      if (ed["headlabel"].norm.include? head) and (ed["taillabel"].norm.include? tail) and
-         (ed.head_node.include? name1.strip) and (ed.tail_node.include? name2.strip)
-      then
-        putinf "EDGE MATCHED!"
-        return ed
-      end
-    end
-    putinf "EDGE NOT FOUND!"
-    nil
-  end
-  
-  def add_node(name1, name2, head, tail, color, reverse)    
-    putinf "\n============\n#{@hostinfo}\n#{name1} <-- #{head}/#{tail} -- #{reverse.to_s} --> #{name2}"
-    
-    # loopback
-    return if not @loopback and (name1.include?("127.0.0.1") or @hostinfo.include?(name2) or (name1 == name2))
-    
-    if name1.include?("127.0.0.1") then
-      name1 = @hostinfo.strip
-      name2 = @hostinfo.strip
-    end
-    
-    if @hostinfo.include?(name2) or (name1 == name2) then
-      c = @hostnode
-    else
-      c = find_node(name2)
-      c = @graph.add_nodes(name2, "shape" => $aa_node_shape, "style" => "filled", "color" => $clr_cnode, $deep_tag => "N/A") if c.nil?
-    end
-    
-    #TODO: it's not geek
-    if not reverse then
-      return if not find_edge(tail, head, name2, name1).nil?
-    else
-      return if not find_edge(head, tail, name1, name2).nil?
-    end
-    
-    if reverse then
-      @graph.add_edges(c, @hostnode, "headlabel" => head, "taillabel" => tail, "labeldistance" => "2", "color" => color)
-    else
-      @graph.add_edges(@hostnode, c, "headlabel" => tail, "taillabel" => head, "color" => color)
-    end
-  end
-
-  def add_image
-    @hostnode.set do |nd|
-      nd.image = $aa_img_dir + @os + ".png"
-    end
+  # rescue => details
+    # puterr "save_pdf failed! #{details}"
   end
   
   def parse_netstat(data)
@@ -197,8 +200,8 @@ class MasterMind
       return
     end
     
-    # g = @graph.add_graph("netmap0", "label" => "#netmap report", "style" => "filled", "color" => "lightgrey")
     conns = [{}]
+    hostips = []
     i = 0
     for ln in data.lines do
       cn = rex.match(ln)
@@ -210,41 +213,95 @@ class MasterMind
         conns[i] = cn
         i = i + 1
         
-        if @hostnode.nil? and not (cn[:src].include? "127.0.0.1") then
-           @hostnode = find_node(cn[:src])
+        if not (cn[:src].include? "127.0.0.1") and not hostips.include? cn[:src] then
+           hostips << cn[:src]
         end
-
-        # puts "-------------------------------------------------" if not a0.nil? 
-        @hostinfo = @hostinfo + cn[:src] + "\n" if (not cn[:src].include? "127.0.0.1") and (not @hostinfo.include? cn[:src])
       end
     end
-
-    #TODO it's not geek
-    if @hostnode.nil? then      
-      @hostnode = @graph.add_nodes(@hostinfo.strip, 
-          "shape" => $aa_node_shape, 
-          "style" => "filled", 
-          "color" => $clr_pnode, 
-          $deep_tag => @deepinfo) # FUCK! stupid $
-    else
-      @hostnode.set do |nd|
-        nd.color = $clr_pnode
-        if not nd.label.to_s.include? @hostinfo then
-          @hostinfo = @hostinfo + "\n" + nd.label.to_s
-          nd.label = @hostinfo
-        end
-        nd[$deep_tag] = @deepinfo
+    
+    return if hostips.empty?
+    
+    # find host node
+    host_node = nil
+    hostips.each do |hip|
+      nip = IP.find(:first, :conditions => {:addr => hip})
+      if not nip.nil? then
+        host_node = nip.node
+        break
       end
     end
-    add_image
-
-    conns.each do |conn|    
-      # next if cn.names.include?("proto")
+    
+    # create new host node
+    new_node = host_node.nil?
+    if new_node then
+      host_node = Host.new
+      host_node.name = hostips[0] or "N/A"
+      host_node.save
+    end
+    
+    # add new ip to node
+    hostips.each do |hip|
+      exists = false
       
-      color = $clr_tcp
-      color = $clr_udp if conn.names.include?("proto") and conn[:proto].downcase == "udp"
-
-      add_node(conn[:src].strip, conn[:dst].strip, conn[:sport].strip, conn[:dport].strip, color, (conn[:type].include? "LISTEN"))
+      if not new_node then        
+        host_node.ips.each do |qip|
+          if hip == qip.addr then
+            exists = true
+            break
+          end
+        end
+      end
+      
+      if not exists then
+        ip = IP.new
+        ip.host_id = host_node.id
+        ip.addr = hip
+        ip.save
+      end
+    end
+    
+    # add edges
+    conns.each do |cn|
+      e = Edge.new
+      
+      if cn.names.include?("proto") then
+        e.proto = cn[:proto]
+      else
+        e.proto = "N/A"
+      end
+      
+      # add new IP
+      left  = IP.find(:first, :conditions => {:addr => cn[:src]})
+      if left.nil? then
+        left = IP.new
+        left.host_id = nil
+        left.addr = cn[:src]
+        left.save
+      end
+      right = IP.find(:first, :conditions => {:addr => cn[:dst]})
+      if right.nil? then
+        right = IP.new
+        right.host_id = nil
+        right.addr = cn[:dst]
+        right.save
+      end
+      
+      # direction of connection
+      if cn[:type].include? "LISTEN" then
+        e.src_tag = cn[:sport]
+        e.src_ip = left.id
+        e.dst_tag = cn[:dport]
+        e.dst_ip = right.id
+        e.save
+      else
+        e.src_tag = cn[:dport]
+        e.src_ip = right.id
+        e.dst_tag = cn[:sport]
+        e.dst_ip = left.id
+        e.save
+      end
+      
+      e.save
     end
   end
   

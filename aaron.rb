@@ -3,7 +3,7 @@
 # Tested on Kali - 2014
 
 # INSTALLATION (Debian):
-#  sudo aptitude install ruby-thor ruby-net ruby-net-ssh ruby-graphviz
+#  sudo aptitude install ruby-thor ruby-net ruby-net-ssh ruby-graphviz libsqlite3-ruby ruby-activerecord
 #  sudo aptitude install ruby-highline ruby-termios
 
 require 'thor'
@@ -23,11 +23,11 @@ class Aaron < Thor
   
   no_commands do
     def prologue
-      master.load_graph(options[:output])
+      master.os = options[:os]
+      master.load_db(options[:output])
     end
 
     def epilogue
-      master.save_graph(options[:output])
       master.save_png(options[:output])  if options[:png]
       master.save_pdf(options[:output])  if options[:pdf]
       
@@ -42,20 +42,22 @@ class Aaron < Thor
     if command.nil? then
       puts <<-BANNER
 Examples:
-  1. Create a new diagram from a netstat output file, then generate report in png and pdf formats
+  10. Create a new diagram from a netstat output file, then generate report in png and pdf formats
     ./aaron.rb file netstat.out --verbose --png --pdf --output test.nmg
-  2. Update an existing diagram from a netstat output file
+  11. Update an existing diagram from a netstat output file
     ./aaron.rb file netstat-win.out --verbose --png --pdf --os win --output test.nmg --update
-  3. Use SSH to create a diagram (against a linux machine)
+  20. Use SSH to create a diagram (against a linux machine)
     ./aaron.rb ssh localhost --user temp --pass temp --verbose --png --pdf --output test.nmg
-  4. More advanced SSH (against a windows machine)
+  21. More advanced SSH (against a windows machine)
     ./aaron.rb ssh example.com --user root --pass toor --verbose --png --pdf --output test.nmg --os win --port 80 --key ~/.ssh/id_rsa --update
-  5. Pipe netstat result into aaron
+  30. Pipe netstat result into aaron
     cat netstat-win.out | ./aaron.rb stdin --verbose --png --pdf --os linux --output test.nmg
     or
     netstat -antu | ./aaron.rb stdin --verbose --png --pdf --os linux --output test.nmg
-  6. Execute command on remote machine via SMB (psexec)
+  40. Execute command on remote machine via SMB (psexec)
     ./aaron.rb psexec 192.168.13.50 --os win --user Administrator --pass 123456 --domain WORKGROUP --verbose --png --pdf --output test.nmg
+  50. Print all windows clients connected to 192.168.0.1 on port 22
+    ./aaron.rb search --dst 192.168.0.1 --dst_port 22 --src_os win
       BANNER
     end
   end
@@ -66,9 +68,6 @@ Examples:
       :desc => "Update an existing diagram"
   class_option :backup,  :type => :boolean, :default => false, :alias => "-b",
       :desc => "Backup an existing diagram"
-  class_option :os,       :type => :string,  :default => "#{$aa_os[0]}", :required => true,
-      :banner => "TARGET_OS",
-      :desc => "Values: #{$aa_os}"
   class_option :loopback,      :type => :boolean, :default => false,
       :desc => "Draw loopback connections (e.g. localhost-to-localhost)"
   class_option :output,   :type => :string, :alias => "-o", :required => true, :default => "test.#{$aa_ext}",
@@ -91,6 +90,9 @@ Examples:
   end
   
   desc "file {NETSTAT-OUTPUT}", "Create a new diagram from a netstat file (netstat -blah > NETSTAT-OUTPUT)"
+  method_option :os,       :type => :string,  :default => "#{$aa_os[0]}", :required => true,
+    :banner => "TARGET_OS",
+    :desc => "Values: #{$aa_os}"
   def file(nsfile)
     puts "file: nsfile=#{nsfile}" if options[:verbose]
     
@@ -113,6 +115,9 @@ Examples:
   method_option :port,        :type => :string, :banner => "PORT", :default => 22
   method_option :key,         :type => :string, :alias => "-k", :banner => "SSH_KEY",
     :desc => "Prompts for passphrase if needed."
+  method_option :os,       :type => :string,  :default => "#{$aa_os[0]}", :required => true,
+    :banner => "TARGET_OS",
+    :desc => "Values: #{$aa_os}"
   # method_option :passphrase,  :type => :string, :alias => "-pp", :banner => "SSH_KEY_PASS_PHRASE"
   def ssh(host)
     puts "#{$aa_ban["inf"]} ssh: #{host}:#{options[:port]}, user=#{options[:user]}" if options[:verbose]
@@ -150,6 +155,9 @@ Examples:
   method_option :user,        :type => :string,   :alias => "-l", :banner => "SMB_USERNAME", :require => true
   method_option :pass,        :type => :string,   :alias => "-p", :banner => "SMB_PASSWORD"
   method_option :domain,      :type => :string,   :default => "WORKGROUP", :alias => "-d", :banner => "SMB_DOMAIN"
+  method_option :os,       :type => :string,  :default => "#{$aa_os[0]}", :required => true,
+    :banner => "TARGET_OS",
+    :desc => "Values: #{$aa_os}"
   def psexec(host)
     puts "#{$aa_ban["inf"]} psexec: host=#{host}, user=#{options[:user]}" if options[:verbose]
   
@@ -174,9 +182,38 @@ Examples:
   end
 
   desc "adb", "#{$aa_ban["exp"]} Execute commands via an 'adb' shell (android)"
+  method_option :os,       :type => :string,  :default => "#{$aa_os[0]}", :required => true,
+    :banner => "TARGET_OS",
+    :desc => "Values: #{$aa_os}"
   def adb()
     puts "#{$aa_ban["inf"]} adb" if options[:verbose]
-  end    
+  end
+  
+  desc "search", "Search something! (e.g. all windows clients connected to 192.168.0.1 on port 22)"
+  method_option :src_os,      :type => :string, :alias => "-so",  :banner => "SRC_OS",      :desc => "source os filter"
+  method_option :dst_os,      :type => :string, :alias => "-do",  :banner => "DST_OS",      :desc => "destination os filter"
+  method_option :src_port,    :type => :string, :alias => "-sp",  :banner => "SRC_PORT",    :desc => "source port filter"
+  method_option :dst_port,    :type => :string, :alias => "-dp",  :banner => "DST_PORT",    :desc => "destination port filter"
+  method_option :src,         :type => :string, :alias => "-s",   :banner => "SRC_ADDRESS", :desc => "source filter"
+  method_option :dst,         :type => :string, :alias => "-d",   :banner => "DST_ADDRESS", :desc => "destination filter"
+  method_option :text,        :type => :string, :alias => "-t",   :banner => "TEXT",        :desc => "text filter"
+  def search
+  end
+  
+  desc "show", "Print more info about a HOST (some of them are not shown in png or pdf)"
+  method_option :info,        :type => :string, :alias => "-i", :banner => "HOST", :desc => "Show all information about a host"
+  method_option :hosts,       :type => :boolean, :default => false, :alias => "-a", :desc => "Show all hosts"
+  def show
+    if options[:hosts] then
+      @master.print_hosts
+    elsif not options[:info].nil? then
+      @master.print_info options[:info]
+    end
+  end
+  
+  desc "edit", "Edit info of a HOST"
+  def edit(host)
+  end
 end
 
 Aaron.start
