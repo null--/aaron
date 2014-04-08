@@ -65,6 +65,12 @@ class GraphViz::Types::EscString
   end
 end
 
+class Numeric
+  def percent_of(n)
+    (self.to_f / n.to_f * 100.0).to_i.to_s + "%"
+  end
+end
+
 class MasterMind
   attr_reader   :graph
   attr_accessor :verbose
@@ -72,6 +78,7 @@ class MasterMind
   attr_accessor :update
   attr_accessor :backup
   attr_accessor :loopback
+  attr_accessor :dead
   
   @db_nmg
   
@@ -89,6 +96,8 @@ class MasterMind
     @update = args[:update] or false
     @backup = args[:backup] or false
     @loopback = args[:loopback]
+    @dead = args[:dead] or false
+    putinf "DEAD MODE ACTIAED!" if @dead
     @graph = nil
     
     ActiveRecord::Base.logger = Logger.new(File.open('debug.log', 'w'))
@@ -142,7 +151,7 @@ class MasterMind
   end
   
   def new_graph
-    @graph = GraphViz.new("netmap",)
+    @graph = GraphViz.new("netmap", :type => "graph")
     
     @graph.node["shape"]  = $aa_node_shape
     @graph.node["color"]  = $clr_node
@@ -200,26 +209,29 @@ class MasterMind
       return
     end
     
-    conns = [{}]
-    hostips = []
+    conns = Array.new
+    hostips = Array.new
+    hostips << "127.0.0.1" if @loopback
     i = 0
-    for ln in data.lines do
+    data.lines.each do |ln|
       cn = rex.match(ln)
+      
       if not cn.nil? then
+        next if cn.names.include? "type" and not @dead and not (cn[:type].include? "ESTAB" or cn[:type].include? "LIST")
+        
         print cn[:proto] + " # " if @verbose and cn.names.include?("proto")
         print cn[:src] + " : " + cn[:sport] + " <--> " + 
               cn[:dst] + " : " + cn[:dport] + 
               " (" + cn[:type] + ")" + "\n" if @verbose
-        conns[i] = cn
-        i = i + 1
+        conns << cn
         
-        if not (cn[:src].include? "127.0.0.1") and not hostips.include? cn[:src] then
+        if not cn[:src].include? "127.0.0.1" and not hostips.include? cn[:src] then
            hostips << cn[:src]
         end
       end
     end
     
-    return if hostips.empty?
+    return if hostips.empty? or conns.empty?
     
     # find host node
     host_node = nil
@@ -261,15 +273,11 @@ class MasterMind
     end
     
     # add edges
+    total = conns.size
+    cur = 0
     conns.each do |cn|
-      e = Edge.new
-      
-      if cn.names.include?("proto") then
-        e.proto = cn[:proto]
-      else
-        e.proto = "N/A"
-      end
-      
+      cur = cur + 1
+      STDOUT.write "\rProcessing connections:\t#{cur}/#{total}\t#{cur.percent_of(total)}"
       # add new IP
       left  = IP.find(:first, :conditions => {:addr => cn[:src]})
       if left.nil? then
@@ -286,23 +294,29 @@ class MasterMind
         right.save
       end
       
-      # direction of connection
-      if cn[:type].include? "LISTEN" then
+      # puts cn
+      # add new connections
+      if not Edge.find(:first, :conditions => {
+          :src_tag => cn[:sport], 
+          :dst_tag => cn[:dport], 
+          :src_ip => left.id, 
+          :dst_ip => right.id}) 
+      then
+        e = Edge.new
+        if cn.names.include?("proto") then
+          e.proto = cn[:proto]
+        else
+          e.proto = "N/A"
+        end
         e.src_tag = cn[:sport]
         e.src_ip = left.id
         e.dst_tag = cn[:dport]
         e.dst_ip = right.id
-        e.save
-      else
-        e.src_tag = cn[:dport]
-        e.src_ip = right.id
-        e.dst_tag = cn[:sport]
-        e.dst_ip = left.id
+        e.comment = cn[:type] if cn.names.include? "type"
         e.save
       end
-      
-      e.save
     end
+    puts
   end
   
   def print_hosts

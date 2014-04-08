@@ -69,7 +69,9 @@ Examples:
   class_option :backup,  :type => :boolean, :default => false, :alias => "-b",
       :desc => "Backup an existing diagram"
   class_option :loopback,      :type => :boolean, :default => false,
-      :desc => "Draw loopback connections (e.g. localhost-to-localhost)"
+      :desc => "Draw loopback connections (e.g. localhost-to-localhost) LOGICALLY DANGEROUS"
+  class_option :dead,          :type => :boolean, :default => false,
+      :desc => "Draw dead connections (e.g. CLOSE_WAIT)"
   class_option :output,   :type => :string, :alias => "-o", :required => true, :default => "test.#{$aa_ext}",
       :banner => "OUTPUT_FILE"
   class_option :png,      :type => :boolean, :default => false,
@@ -78,6 +80,9 @@ Examples:
       :desc => "Save graph in pdf format, too"
       
   desc "stdin", "Pipe netstat result into aaron"
+  method_option :os,       :type => :string,  :default => "#{$aa_os[0]}", :required => true,
+    :banner => "TARGET_OS",
+    :desc => "Values: #{$aa_os}"
   def stdin
     data = ""
     inp = ""
