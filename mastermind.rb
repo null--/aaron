@@ -1,37 +1,24 @@
+=begin
+GPLv3:
+
+This file is part of aaron.
+aaron is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+aaron is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+ 
+You should have received a copy of the GNU General Public License
+along with Graviton.  If not, see http://www.gnu.org/licenses/.
+=end
+
 require 'graphviz'
 require 'fileutils'
 require 'active_record'
-
-=begin
-SQLite DB:
-                                                                                            
-   +----------------+           +-----------------+                                         
-   | Host           |           | Edge            |                                         
-   +----------------+           +-----------------+                                         
-   | id (PK)        |           | id (PK)         |                                          
-   | name           |           | src_ip_id (FK)  |                                          
-   | info           |           | dst_ip_id       |                                          
-   | deepinfo       |           | src_tag         |                                       
-   | comment        |           | dst_tag         |                                         
-   |                |           | proto           |                                         
-   |                |           | comment         |                                         
-   +----------------+           +-----------------+
-          ^                          |
-          |                          |
-          |                          |
-          |    +----------------+    |
-          |    | IP             |    |
-          |    +----------------+    |
-          |    | id (PK)        |<---+
-          +----| host_id (FK)   |
-               | addr           |
-               | comment        |
-               |                |
-               |                |
-               |                |
-               +----------------+
-                                                                                            
-=end
 
 class Host < ActiveRecord::Base
   has_many :ips # , :class_name => "IP", :foreign_key => "host_id"
@@ -135,7 +122,8 @@ class MasterMind
     if @verbose then
       ActiveRecord::Base.logger = Logger.new(File.open('debug.log', 'w'))
     else
-      ActiveRecord::Base.logger = nil
+      ActiveRecord::Base.logger = Logger.new('/dev/null')
+      ActiveRecord::Migration.verbose = false
     end
 
     puts "#{$aa_ban["msm"]} I want it all and I want it now!" if @verbose
@@ -156,32 +144,34 @@ class MasterMind
       # :database => ':memory:'
     )
     
-    ActiveRecord::Schema.define do
-      unless ActiveRecord::Base.connection.table_exists? 'hosts'
-        create_table :hosts do |table|
-          table.column :name,     :string
-          table.column :info,     :text
-          table.column :deepinfo, :text
-          table.column :comment,  :text
+    unless @update then
+      ActiveRecord::Schema.define do
+        unless ActiveRecord::Base.connection.table_exists? 'hosts'
+          create_table :hosts do |table|
+            table.column :name,     :string
+            table.column :info,     :text
+            table.column :deepinfo, :text
+            table.column :comment,  :text
+          end
         end
-      end
-      
-      unless ActiveRecord::Base.connection.table_exists? 'ips'
-        create_table :ips do |table|
-          table.column :host_id,  :integer # FK
-          table.column :addr,       :string
-          table.column :comment,  :text
+        
+        unless ActiveRecord::Base.connection.table_exists? 'ips'
+          create_table :ips do |table|
+            table.column :host_id,  :integer # FK
+            table.column :addr,       :string
+            table.column :comment,  :text
+          end
         end
-      end
-      
-      unless ActiveRecord::Base.connection.table_exists? 'edges'
-        create_table :edges do |table|
-          table.column :src_ip_id,   :integer
-          table.column :dst_ip_id,   :integer
-          table.column :src_tag,     :string
-          table.column :dst_tag,     :string
-          table.column :proto,    :string
-          table.column :comment,  :text
+        
+        unless ActiveRecord::Base.connection.table_exists? 'edges'
+          create_table :edges do |table|
+            table.column :src_ip_id,   :integer
+            table.column :dst_ip_id,   :integer
+            table.column :src_tag,     :string
+            table.column :dst_tag,     :string
+            table.column :proto,    :string
+            table.column :comment,  :text
+          end
         end
       end
     end
@@ -211,10 +201,10 @@ class MasterMind
     return if @graph.nil?
     
     # load host ips
-    host_ips = Array.new
-    @host_node.ips.each do |hip|
-      host_ips << hip.addr
-    end
+    # host_ips = Array.new
+    # @host_node.ips.each do |hip|
+    #  host_ips << hip.addr
+    # end
     
     # add hosts
     hosts_lbl = Array.new
@@ -301,6 +291,7 @@ class MasterMind
         print cn[:src] + " : " + cn[:sport] + " <--> " + 
               cn[:dst] + " : " + cn[:dport] + 
               " (" + cn[:type] + ")" + "\n" if @verbose
+              
         conns << cn
         
         if not cn[:src].include? "127.0.0.1" and not hostips.include? cn[:src] then
@@ -361,7 +352,7 @@ class MasterMind
     cur = 0
     conns.each do |cn|
       cur = cur + 1
-      STDOUT.write "\rProcessing connections:\t#{cur}/#{total}\t#{cur.percent_of(total)}"
+      STDOUT.write "\rProcessing connections:\t#{cur}/#{total}\t#{cur.percent_of(total)} \t"
       # add new IP
       left  = Ip.find(:first, :conditions => {:addr => cn[:src]})
       if left.nil? then
@@ -400,6 +391,11 @@ class MasterMind
         
         e.comment = cn[:type] if cn.names.include? "type"
         e.save
+        
+        print "Edge: " + e.proto + " # " if @verbose
+        print e.src_ip.addr + " : " + e.src_tag + " <--> " + 
+            e.dst_ip.addr + " : " + e.dst_tag + 
+            " (" + e.comment + ")" + "\n" if @verbose
       end
     end
     puts
@@ -520,5 +516,28 @@ class MasterMind
     end
     
     puts "Nothing matched your search query!" if not_found
+  end
+  
+  def edit(host)
+    ip = Ip.find(:first, :conditions => {:addr => host})
+    puterr "HOST NOT FOUND" if ip.nil? or ip.host.nil?
+    return if ip.nil? or ip.host.nil?
+    
+    puts "Name:"
+    puts ip.host.name
+    puts "New Name:"
+    ip.host.name = STDIN.gets
+    
+    puts "Info:"
+    puts ip.host.info
+    puts "New Info:"
+    ip.host.info = STDIN.gets
+    
+    puts "Comment:"
+    puts ip.host.comment
+    puts "New Comment:"
+    ip.host.comment = STDIN.gets
+    
+    ip.host.save
   end
 end

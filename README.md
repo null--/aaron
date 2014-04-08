@@ -35,3 +35,30 @@ one of those known targets, you should use all the information found inside that
 - ADB<br>
 - BSD test<br>
 - Find os type automatically (--os=auto)
+
+##more                                    
+- Database:
+   +----------------+           +-----------------+ <br>
+   | Host           |           | Edge            | <br>
+   +----------------+           +-----------------+ <br>
+   | id (PK)        |           | id (PK)         | <br>
+   | name           |           | src_ip_id (FK)  | <br>
+   | info           |           | dst_ip_id       | <br>
+   | deepinfo       |           | src_tag         | <br>
+   | comment        |           | dst_tag         | <br>
+   |                |           | proto           | <br>
+   |                |           | comment         | <br>
+   +----------------+           +-----------------+ <br>
+          ^                          | |            <br>
+          |                          | |            <br>
+          |                          | |            <br>
+          |    +----------------+    | |            <br>
+          |    | IP             |    | |            <br>
+          |    +----------------+    | |            <br>
+          |    | id (PK)        |<---+ |            <br>
+          +----| host_id (FK)   |<-----+            <br>
+               | addr           |                   <br>
+               | comment        |                   <br>
+               |                |                   <br>
+               +----------------+                   <br>
+

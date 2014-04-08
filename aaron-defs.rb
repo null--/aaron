@@ -1,23 +1,37 @@
+=begin
+GPLv3:
+
+This file is part of aaron.
+aaron is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+aaron is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+ 
+You should have received a copy of the GNU General Public License
+along with Graviton.  If not, see http://www.gnu.org/licenses/.
+=end
+
 $aa_version = "1.0-unstable"
 
 $aaron_name = "#aaron"
 # $aaronizer_name = "#aaronizer"
 
 $nfo = <<-NFO
--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   #{$aaron_name}, by _null_ - #{$aa_version} - 2014 - GPLv3
     https://github.com/null--/aaron
   
   In loving memory of internet activist, "Aaron Swartz".
     http://en.wikipedia.org/wiki/Aaron_Swartz
--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 NFO
 
-$lastnfo = <<-LASTNFO
-==============
-Does PNG output SUCK? Do you love that old school black and white shell?
-Try "#{$aaron_name} help search" and find out how to analyse the output "in depth"!
-LASTNFO
+$lastnfo = "DONE!"
 
 $aa_img_dir     = "./img/"
 $aa_tmp_dir     = "./tmp/"

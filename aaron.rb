@@ -1,5 +1,23 @@
 #!/usr/bin/env ruby
 
+=begin
+GPLv3:
+
+This file is part of aaron.
+aaron is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+aaron is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+ 
+You should have received a copy of the GNU General Public License
+along with Graviton.  If not, see http://www.gnu.org/licenses/.
+=end
+
 # Tested on Kali - 2014
 
 # INSTALLATION (Debian):
@@ -24,12 +42,12 @@ class Aaron < Thor
   no_commands do
     def prologue
       master.os = options[:os]
-      master.load_db(options[:output])
+      master.load_db(options[:project])
     end
 
     def epilogue
-      master.save_png(options[:output])  if options[:png]
-      master.save_pdf(options[:output])  if options[:pdf]
+      master.save_png(options[:project])  if options[:png]
+      master.save_pdf(options[:project])  if options[:pdf]
       
       puts "#{$lastnfo}"
     end
@@ -43,21 +61,25 @@ class Aaron < Thor
       puts <<-BANNER
 Examples:
   10. Create a new diagram (or update and exsisting one) from a netstat output file, then generate report in png and pdf formats
-    ./aaron.rb file netstat.out --verbose --png --pdf --output test.nmg
+    ./aaron.rb file netstat.out --verbose --png --pdf --project test.nmg
   11. Create a new diagram (remove old #{$aa_ext} file) from a netstat output file
-    ./aaron.rb file netstat-win.out --verbose --png --pdf --os win --output test.nmg --new
+    ./aaron.rb file netstat-win.out --verbose --png --pdf --os win --project test.nmg --new
   20. Use SSH to create a diagram (against a linux machine)
-    ./aaron.rb ssh localhost --user temp --pass temp --verbose --png --pdf --output test.nmg
+    ./aaron.rb ssh localhost --user temp --pass temp --verbose --png --pdf --project test.nmg
   21. More advanced SSH (against a windows machine)
-    ./aaron.rb ssh example.com --user root --pass toor --verbose --png --pdf --output test.nmg --os win --port 80 --key ~/.ssh/id_rsa --new
+    ./aaron.rb ssh example.com --user root --pass toor --verbose --png --pdf --project test.nmg --os win --port 80 --key ~/.ssh/id_rsa --new
   30. Pipe netstat result into aaron
-    cat netstat-win.out | ./aaron.rb stdin --verbose --png --pdf --os linux --output test.nmg
+    cat netstat-win.out | ./aaron.rb stdin --verbose --png --pdf --os linux --project test.nmg
     or
-    netstat -antu | ./aaron.rb stdin --verbose --png --pdf --os linux --output test.nmg
+    netstat -antu | ./aaron.rb stdin --verbose --png --pdf --os linux --project test.nmg
   40. Execute command on remote machine via SMB (psexec)
-    ./aaron.rb psexec 192.168.13.50 --os win --user Administrator --pass 123456 --domain WORKGROUP --verbose --png --pdf --output test.nmg
+    ./aaron.rb psexec 192.168.13.50 --os win --user Administrator --pass 123456 --domain WORKGROUP --verbose --png --pdf --project test.nmg
   50. Print all windows clients connected to 192.168.0.1 on port 22
     ./aaron.rb search --dst 192.168.0.1 --dst_port 22 --src_os win
+    
+-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Does PNG output SUCK? Do you love that old school black and white shell?
+Try "#{$aaron_name} help search" and find out how to analyse the output "in depth"!
       BANNER
     end
   end
@@ -72,8 +94,8 @@ Examples:
       :desc => "Draw loopback connections (e.g. localhost-to-localhost) LOGICALLY DANGEROUS"
   class_option :dead,          :type => :boolean, :default => false,
       :desc => "Draw dead connections (e.g. CLOSE_WAIT)"
-  class_option :output,   :type => :string, :alias => "-o", :required => true, :default => "test.#{$aa_ext}",
-      :banner => "OUTPUT_FILE"
+  class_option :project,   :type => :string, :alias => "-o", :required => true, :default => "test#{$aa_ext}",
+      :banner => "PROJECT_FILE"
   class_option :png,      :type => :boolean, :default => false,
       :desc => "Save graph in png format, too"
   class_option :pdf,      :type => :boolean, :default => false,
@@ -108,7 +130,7 @@ Examples:
 
   desc "redraw", "Redraw an existing diagram (set at least one of --pdf or --png optoins)"
   def redraw
-    puts "redraw: #{options[:output]}" if options[:verbose]
+    puts "redraw: #{options[:project]}" if options[:verbose]
     
     prologue
     epilogue
@@ -206,10 +228,10 @@ Examples:
   method_option :src,         :type => :string, :alias => "-s",   :banner => "SRC_ADDRESS", :desc => "source filter"
   method_option :dst,         :type => :string, :alias => "-d",   :banner => "DST_ADDRESS", :desc => "destination filter"
   method_option :text,        :type => :string, :alias => "-t",   :banner => "TEXT",        :desc => "text filter"
-  method_option :nmgfile,  :type => :string, :default => 'test.nmg', :alias => "-i", :required => true,
+  method_option :project,  :type => :string, :default => 'test.nmg', :alias => "-i", :required => true,
       :desc => "An existing #{$aa_ext}"
   def search
-    @master.load_db(options[:nmgfile], true)
+    @master.load_db(options[:project], true)
     
     @master.search(options[:src_os],
                    options[:dst_os],
@@ -224,10 +246,10 @@ Examples:
   desc "show", "Print more info about a HOST (some of them are not shown in png or pdf)"
   method_option :info,        :type => :string, :alias => "-i", :banner => "HOST", :desc => "Show all information about a host"
   method_option :hosts,       :type => :boolean, :default => false, :alias => "-a", :desc => "Show all hosts"
-  method_option :nmgfile,  :type => :string, :default => 'test.nmg', :alias => "-i", :required => true,
+  method_option :project,  :type => :string, :default => 'test.nmg', :alias => "-i", :required => true,
       :desc => "An existing #{$aa_ext}"
   def show
-    @master.load_db(options[:nmgfile], true)
+    @master.load_db(options[:project], true)
     
     if options[:hosts] then
       @master.print_hosts
@@ -236,9 +258,13 @@ Examples:
     end
   end
   
-  desc "edit", "Edit info of a HOST"
+  desc "edit", "Edit a HOST"
+  method_option :project,  :type => :string, :default => 'test.nmg', :alias => "-i", :required => true,
+        :desc => "An existing #{$aa_ext}"
   def edit(host)
-    @master.load_db(options[:nmgfile], true)
+    @master.load_db(options[:project], true)
+    
+    @master.edit(host)
   end
 end
 
