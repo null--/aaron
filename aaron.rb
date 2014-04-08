@@ -34,7 +34,7 @@ class Aaron < Thor
 
   def initialize(*args)
     super
-    puts "#{$nfo}"
+    puts "#{$nfo}" if not ARGV[0].include? "msf" # silenced
     
     @master = MasterMind.new(options[:verbose], options)
   end
@@ -80,6 +80,8 @@ Examples:
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 Does PNG output SUCK? Do you love that old school black and white shell?
 Try "#{$aaron_name} help search" and find out how to analyse the output "in depth"!
+
+Another cool tool is aaron_import.rb. copy it to metasploit as a pluin folder and enjoy it!
       BANNER
     end
   end
@@ -265,6 +267,15 @@ Try "#{$aaron_name} help search" and find out how to analyse the output "in dept
     @master.load_db(options[:project], true)
     
     @master.edit(host)
+  end
+  
+  desc "msf", "A clean output for metasploit (aaron_import plugin)"
+  method_option :project,  :type => :string, :default => 'test.nmg', :alias => "-i", :required => true,
+        :desc => "An existing #{$aa_ext}"
+  def msf
+    @master.load_db(options[:project], true)
+    
+    @master.msf
   end
 end
 

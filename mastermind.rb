@@ -444,6 +444,23 @@ class MasterMind
     puts "Comment:\n" + ip.host.comment + "=================" unless ip.host.comment.nil?
   end
   
+  def msf
+    hs = Host.find(:all)
+    return if hs.nil?
+    
+    hs.each do |h|
+      ips = h.ips
+      h.name = "N/A" if h.name.nil?
+      h.info = "N/A" if h.info.nil?
+      
+      ln = h.name + " -!- " + h.info
+      ln = ln.gsub("\n", "")
+      ips.each do |i|
+        puts "-!- " + i.addr + " -!- " + ln
+      end
+    end
+  end
+  
   def search(sos, dos, sp, dp, src, dst, txt)
     ips = Ip.find(:all)
     
