@@ -28,8 +28,8 @@ $nmg_format     = "canon"
 $deep_tag       = "comment"
 $aa_node_shape  = "folder"
 $aa_graph_layout= "circo"
-$clr_pnode      = "#00DD99"
-$clr_cnode      = "#118855"
+$clr_pnode      = "#99EECC"
+$clr_cnode      = "#99EECC"
 $clr_bg         = "white"
 $clr_node       = "gray"
 $clr_graph      = "black"
@@ -93,7 +93,7 @@ $aa_netstat = {
 $aa_netstat_regex = {
   "linux"    => /(?<proto>(tcp|udp))\s*\d+\s*\d+\s*(?<src>(\d+\.\d+\.\d+\.\d+))\:(?<sport>[1-9]\d*)\s*(?<dst>(\d+\.\d+\.\d+\.\d+))\:(?<dport>[1-9]\d*)\s*(?<type>ESTABLISHED|LISTEN|\S+)/im,
   "bsd"      => /(?<proto>(tcp4|udp4))\s*\d+\s*\d+\s*(?<src>(\d+\.\d+\.\d+\.\d+))\.(?<sport>[1-9]\d*)\s*(?<dst>(\d+\.\d+\.\d+\.\d+))\.(?<dport>[1-9]\d*)\s*(?<type>ESTABLISHED|LISTEN|\S+)/im,
-  "solaris"  => /(?<src>(\d+\.\d+\.\d+\.\d+))\.(?<sport>[1-9]\d*)\s*(?<dst>(\d+\.\d+\.\d+\.\d+))\.(?<dport>[1-9]\d*)\s*(?<type>ESTABLISHED|LISTEN|\S+)/im,
+  "solaris"  => /(?<src>(\d+\.\d+\.\d+\.\d+))\.(?<sport>[1-9]\d*)\s*(?<dst>(\d+\.\d+\.\d+\.\d+))\.(?<dport>[1-9]\d*)\s*\d+\s*\d+\s*\d+\s*\d+\s*(?<type>ESTABLISHED|LISTEN|\S+)/im,
   "win"      => /(?<proto>(tcp|udp))\s*(?<src>(\d+\.\d+\.\d+\.\d+))\:(?<sport>[1-9]\d*)\s*(?<dst>(\d+\.\d+\.\d+\.\d+))\:(?<dport>[1-9]\d*)\s*(?<type>ESTABLISHED|LISTENING|\S+)/im,
 }
 

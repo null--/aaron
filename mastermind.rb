@@ -34,12 +34,26 @@ SQLite DB:
 =end
 
 class Host < ActiveRecord::Base
-  has_many :ips
+  has_many :ips, :class_name => "IP"
+  
+  def find_os
+    return nil if self.info.nil?
+    
+    return "win"      if self.info.downcase.include? "win"
+    return "linux"    if self.info.downcase.include? "linux"
+    return "bsd"      if self.info.downcase.include? "bsd"
+    return "solaris"  if self.info.downcase.include? "sun"
+    return "solaris"  if self.info.downcase.include? "solaris"
+    return "solaris"  if self.info.downcase.include? "oracle"
+    return "linux"    if self.info.downcase.include? "linux"
+    
+    nil
+  end
 end
 
 class IP < ActiveRecord::Base
-  belongs_to :host
-  has_many   :edges
+  belongs_to :host, :class_name => "Host"
+  has_many   :edges, :class_name => "Edge"
 end
 
 class Edge < ActiveRecord::Base
@@ -73,12 +87,19 @@ end
 
 class MasterMind
   attr_reader   :graph
+  attr_reader   :host_node
+  
   attr_accessor :verbose
   attr_accessor :os
   attr_accessor :update
   attr_accessor :backup
   attr_accessor :loopback
   attr_accessor :dead
+
+  attr_accessor :name
+  attr_accessor :info
+  attr_accessor :deepinfo
+  attr_accessor :comment
   
   @db_nmg
   
@@ -98,17 +119,26 @@ class MasterMind
     @loopback = args[:loopback]
     @dead = args[:dead] or false
     putinf "DEAD MODE ACTIAED!" if @dead
-    @graph = nil
-    
-    ActiveRecord::Base.logger = Logger.new(File.open('debug.log', 'w'))
 
-    puts "#{$aa_ban["msm"]} I want it all and I want it now!" if @verbose
+    @graph = nil
+    @host_node = nil
+    
+    if @verbose then
+      ActiveRecord::Base.logger = Logger.new(File.open('debug.log', 'w'))
+    else
+      ActiveRecord::Base.logger = nil
+    end
+
+    puts "#{$aa_ban["msm"]} I want it all and I want it now!"
   end
   
   def load_db(path, must_exists = false)
     puts "#{$aa_ban["msm"]} Loading #{path}..." if @verbose
     
-    FileUtils.rm(path) if not @update and not must_exists and not @backup
+    if not @update and not must_exists and not @backup then
+      putinf "Removing existing project"
+      FileUtils.rm(path)
+    end
     # TODO: update, backup
     
     ActiveRecord::Base.establish_connection(
@@ -118,16 +148,16 @@ class MasterMind
     )
     
     ActiveRecord::Schema.define do
-      unless ActiveRecord::Base.connection.tables.include? 'host'
+      unless ActiveRecord::Base.connection.table_exists? 'hosts'
         create_table :hosts do |table|
           table.column :name,     :string
-          table.column :info,     :string
+          table.column :info,     :text
           table.column :deepinfo, :text
           table.column :comment,  :text
         end
       end
       
-      unless ActiveRecord::Base.connection.tables.include? 'ip'
+      unless ActiveRecord::Base.connection.table_exists? 'ips'
         create_table :ips do |table|
           table.column :host_id, :integer # FK
           table.column :addr,       :string
@@ -135,7 +165,7 @@ class MasterMind
         end
       end
       
-      unless ActiveRecord::Base.connection.tables.include? 'edge'
+      unless ActiveRecord::Base.connection.table_exists? 'edges'
         create_table :edges do |table|
           table.column :src_ip,   :integer # FK
           table.column :dst_ip,   :integer # FK
@@ -171,10 +201,27 @@ class MasterMind
     
     return if @graph.nil?
     
+    # load host ips
+    host_ips = Array.new
+    @host_node.ips.each do |hip|
+      host_ips << hip.addr
+    end
+    
     # add ips
     ips = IP.find(:all)
     ips.each do |ip|
-      c = @graph.add_nodes(ip.addr, "shape" => $aa_node_shape, "style" => "filled", "color" => $clr_cnode)
+      mn  = ip.addr
+      mn  = mn + "\n" + ip.host.name     if not ip.host.nil? and not ip.host.name.nil?
+      mos = ip.host.find_os  if not ip.host.nil?
+      
+      if host_ips.include? ip.addr then
+        c = @graph.add_nodes(ip.addr, "label" => mn, "shape" => $aa_node_shape, "style" => "filled", "color" => $clr_cnode, :image => $aa_img_dir + @os + ".png")
+      elsif not ip.host.nil? and not mos.nil? then
+        puts mos
+        c = @graph.add_nodes(ip.addr, "label" => mn, "shape" => $aa_node_shape, "style" => "filled", "color" => $clr_cnode, :image => $aa_img_dir + mos + ".png")
+      else
+        c = @graph.add_nodes(ip.addr, "label" => mn, "shape" => $aa_node_shape, "style" => "filled", "color" => $clr_cnode)
+      end
     end
     
     # add edges
@@ -217,7 +264,7 @@ class MasterMind
       cn = rex.match(ln)
       
       if not cn.nil? then
-        next if cn.names.include? "type" and not @dead and not (cn[:type].include? "ESTAB" or cn[:type].include? "LIST")
+        next if cn.names.include? "type" and not @dead and not (cn[:type].upcase.include? "ESTAB" or cn[:type].upcase.include? "LIST")
         
         print cn[:proto] + " # " if @verbose and cn.names.include?("proto")
         print cn[:src] + " : " + cn[:sport] + " <--> " + 
@@ -234,29 +281,35 @@ class MasterMind
     return if hostips.empty? or conns.empty?
     
     # find host node
-    host_node = nil
+    @host_node = nil
     hostips.each do |hip|
       nip = IP.find(:first, :conditions => {:addr => hip})
       if not nip.nil? then
-        host_node = nip.node
+        @host_node = nip.host
         break
       end
     end
     
     # create new host node
-    new_node = host_node.nil?
+    new_node = @host_node.nil?
     if new_node then
-      host_node = Host.new
-      host_node.name = hostips[0] or "N/A"
-      host_node.save
+      @host_node = Host.new
+      @host_node.save
     end
+    
+    @host_node.name = @name
+    @host_node.info = @info
+    @host_node.deepinfo = @deepinfo
+    @host_node.comment = @comment
+    @host_node.save
     
     # add new ip to node
     hostips.each do |hip|
       exists = false
       
-      if not new_node then        
-        host_node.ips.each do |qip|
+      if not new_node then
+        @host_node.ips
+        @host_node.ips.each do |qip|
           if hip == qip.addr then
             exists = true
             break
@@ -266,7 +319,7 @@ class MasterMind
       
       if not exists then
         ip = IP.new
-        ip.host_id = host_node.id
+        ip.host_id = @host_node.id
         ip.addr = hip
         ip.save
       end

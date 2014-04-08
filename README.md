@@ -31,6 +31,9 @@ one of those known targets, you should use all the information found inside that
 
 ##TODO
 - From Graphviz to ActiveRecord
+- -- add image
+- -- info and deepinfo
+- -- general test
 - png examples folder<br>
 - save hidden info on each node<br>
 - aaron search (+ os/port/ip filter): 2/5<br>

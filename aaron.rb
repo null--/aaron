@@ -142,12 +142,15 @@ Examples:
       rt = ssh.exec!( $aa_route[ options[:os] ] )            
       ns = ssh.exec!( $aa_netstat[ options[:os] ] )
       puts "#{$aa_ban["inf"]} netstat result:\n#{ns}" if options[:verbose]
+      
       prologue
-      master.add_to_hostinfo ( hs )
-      master.add_to_hostinfo ( ov )
-      master.add_to_deepinfo ( ad )
-      master.add_to_deepinfo ( rt )
+      
+      master.name = hs
+      master.info = ov
+      master.deepinfo = ad + rt 
+      
       master.parse_netstat   ( ns )
+      
       epilogue
       ssh.close()
     end
@@ -178,10 +181,11 @@ Examples:
     
     puts "#{$aa_ban["inf"]} netstat result:\n#{ns}" if options[:verbose]
     prologue
-    master.add_to_hostinfo ( hs )
-    master.add_to_hostinfo ( ov )
-    master.add_to_deepinfo ( ad )
-    master.add_to_deepinfo ( rt )
+    
+    master.name = hs
+    master.info = ov
+    master.deepinfo = ad + rt
+    
     master.parse_netstat   ( ns )
     epilogue
   end
