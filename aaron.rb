@@ -30,6 +30,8 @@ class Aaron < Thor
       master.save_graph(options[:output])
       master.save_png(options[:output])  if options[:png]
       master.save_pdf(options[:output])  if options[:pdf]
+      
+      puts "#{$lastnfo}"
     end
   end
 
@@ -66,7 +68,7 @@ Examples:
       :desc => "Backup an existing diagram"
   class_option :os,       :type => :string,  :default => "#{$aa_os[0]}", :required => true,
       :banner => "TARGET_OS",
-      :desc => "Values: #{$os}"
+      :desc => "Values: #{$aa_os}"
   class_option :loopback,      :type => :boolean, :default => false,
       :desc => "Draw loopback connections (e.g. localhost-to-localhost)"
   class_option :output,   :type => :string, :alias => "-o", :required => true, :default => "test.#{$aa_ext}",
@@ -140,8 +142,8 @@ Examples:
       ssh.close()
     end
   
-  # rescue => details
-    # puts "#{$aa_ban["err"]} SSH Failed #{details}"    
+  rescue => details
+    puts "#{$aa_ban["err"]} SSH Failed #{details}"    
   end
 
   desc "psexec {HOST}", "#{$aa_ban["exp"]} Execute commands via a 'psexec' connection the remote (Windows) host (requires metasploit)"

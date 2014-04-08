@@ -150,7 +150,7 @@ class MasterMind
   end
   
   def add_node(name1, name2, head, tail, color, reverse)    
-    putinf "Adding(#{@hostinfo}) #{name1} <-- #{head}/#{tail} -- #{reverse.to_s} --> #{name2}"
+    putinf "\n============\n#{@hostinfo}\n#{name1} <-- #{head}/#{tail} -- #{reverse.to_s} --> #{name2}"
     
     # loopback
     return if not @loopback and (name1.include?("127.0.0.1") or @hostinfo.include?(name2) or (name1 == name2))
@@ -200,10 +200,10 @@ class MasterMind
     for ln in data.lines do
       cn = rex.match(ln)
       if not cn.nil? then
-        puts cn[:proto] + " # " + 
-              cn[:src] + " : " + cn[:sport] + " <--> " + 
+        print cn[:proto] + " # " if @verbose and cn.names.include?("proto")
+        print cn[:src] + " : " + cn[:sport] + " <--> " + 
               cn[:dst] + " : " + cn[:dport] + 
-              " (" + cn[:type] + ")" if @verbose
+              " (" + cn[:type] + ")" + "\n" if @verbose
         conns[i] = cn
         i = i + 1
         
@@ -236,10 +236,10 @@ class MasterMind
     add_image
 
     conns.each do |conn|    
-      next if conn[:proto].nil?
+      # next if cn.names.include?("proto")
       
       color = $clr_tcp
-      color = $clr_udp if conn[:proto].downcase == "udp"
+      color = $clr_udp if conn.names.include?("proto") and conn[:proto].downcase == "udp"
 
       add_node(conn[:src].strip, conn[:dst].strip, conn[:sport].strip, conn[:dport].strip, color, (conn[:type].include? "LISTEN"))
     end

@@ -1,14 +1,23 @@
 $aa_version = "0.1-unstable"
 
+$aaron_name = "#aaron"
+$aaronizer_name = "#aaronizer"
+
 $nfo = <<-NFO
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  #aaron, by _null_ - #{$aa_version} - 2014 - GPLv3
+  #{$aaron_name}, by _null_ - #{$aa_version} - 2014 - GPLv3
     https://github.com/null--/aaron
   
   In loving memory of internet activist, "Aaron Swartz".
     http://en.wikipedia.org/wiki/Aaron_Swartz
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 NFO
+
+$lastnfo = <<-LASTNFO
+==============
+Does PDF or PNG output seem ugly? Do you love that old school black and white shell?
+Try #{$aaronizer_name}, NOW!
+LASTNFO
 
 $aa_img_dir     = "./img/"
 
@@ -53,7 +62,7 @@ $aa_os_ver = {
 $aa_adapter = {
   "linux"    => "ifconfig",
   "bsd"      => "ifconfig",
-  "solaris"  => "ifconfig",
+  "solaris"  => "ifconfig -a",
   "win"      => "ipconfig"
 }
 
@@ -82,7 +91,7 @@ $aa_netstat = {
 $aa_netstat_regex = {
   "linux"    => /(?<proto>(tcp|udp))\s*\d+\s*\d+\s*(?<src>(\d+\.\d+\.\d+\.\d+))\:(?<sport>[1-9]\d*)\s*(?<dst>(\d+\.\d+\.\d+\.\d+))\:(?<dport>[1-9]\d*)\s*(?<type>ESTABLISHED|LISTEN|\w+)/im,
   "bsd"      => /(?<proto>(tcp4|udp4))\s*\d+\s*\d+\s*(?<src>(\d+\.\d+\.\d+\.\d+))\.(?<sport>[1-9]\d*)\s*(?<dst>(\d+\.\d+\.\d+\.\d+))\.(?<dport>[1-9]\d*)\s*(?<type>ESTABLISHED|LISTEN|\w+)/im,
-  "solaris"  => /(?<proto>(tcp|udp))\s*\d+\s*\d+\s*(?<src>(\d+\.\d+\.\d+\.\d+))\.(?<sport>[1-9]\d*)\s*(?<dst>(\d+\.\d+\.\d+\.\d+))\.(?<dport>[1-9]\d*)\s*(?<type>ESTABLISHED|LISTEN|\w+)/im,
+  "solaris"  => /(?<src>(\d+\.\d+\.\d+\.\d+))\.(?<sport>[1-9]\d*)\s*(?<dst>(\d+\.\d+\.\d+\.\d+))\.(?<dport>[1-9]\d*)\s*(?<type>ESTABLISHED|LISTEN|\w+)/im,
   "win"      => /(?<proto>(tcp|udp))\s*(?<src>(\d+\.\d+\.\d+\.\d+))\:(?<sport>[1-9]\d*)\s*(?<dst>(\d+\.\d+\.\d+\.\d+))\:(?<dport>[1-9]\d*)\s*(?<type>ESTABLISHED|LISTENING|\w+)/im,
 }
 
