@@ -40,10 +40,12 @@ Designed for hacktists, professional penetration testers and APT teams.
     - Supports "adb shell" (android devices)  
 
 #TODO
+  - fix fuckedupography in graphviz output!
   - png examples folder
   - aaron search + regex
+  - IPv6 netstat regex
   - BSD test
-  - test, test, test  
+  - test, test, test
   
 #more                                    
   - Sqlite3 Database (.axa file):
@@ -56,7 +58,7 @@ Designed for hacktists, professional penetration testers and APT teams.
      | deepinfo       |           | src_tag         | 
      | comment        |           | dst_tag         | 
      |                |           | proto           | 
-     |                |           | type            | 
+     |                |           | type_tag        | 
      |                |           | comment         |
      +----------------+           +-----------------+ 
             ^                          | |            

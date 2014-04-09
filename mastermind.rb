@@ -1,29 +1,34 @@
-=begin
-GPLv3:
-
-This file is part of aaron.
-aaron is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-aaron is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
- 
-You should have received a copy of the GNU General Public License
-along with Graviton.  If not, see http://www.gnu.org/licenses/.
-=end
+##
+# GPLv3:
+#
+# This file is part of aaron.
+# aaron is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# aaron is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#  
+# You should have received a copy of the GNU General Public License
+# along with Graviton.  If not, see http://www.gnu.org/licenses/.
 
 require 'graphviz'
 require 'fileutils'
 require 'active_record'
 
+#-------------------------------------------------------------------------- #
+##
+# Host class
+# contains information about a host
 class Host < ActiveRecord::Base
   has_many :ips # , :class_name => "IP", :foreign_key => "host_id"
   
-  
+#-------------------------------------------------------------------------- #
+  ##
+  # find OS type based on +info+ column
   def find_os
     return nil if self.info.nil?
     
@@ -39,6 +44,9 @@ class Host < ActiveRecord::Base
   end
 end
 
+#-------------------------------------------------------------------------- #
+##
+# IP class
 class Ip < ActiveRecord::Base
   belongs_to :host # , :class_name => "Host", :foreign_key => "host_id"
   has_many   :start_edges , :class_name => "Edge", :foreign_key => "src_ip_id"
@@ -51,15 +59,22 @@ class Ip < ActiveRecord::Base
   # end
 end
 
+#-------------------------------------------------------------------------- #
+##
+# Edge class
 class Edge < ActiveRecord::Base
   belongs_to :src_ip, :class_name => "Ip", :foreign_key => "src_ip_id"
   belongs_to :dst_ip, :class_name => "Ip", :foreign_key => "dst_ip_id"
 end
 
+#-------------------------------------------------------------------------- #
+##
+# generates a random string
 def rand_str
   (0...8).map { (65 + rand(26)).chr }.join
 end
 
+#-------------------------------------------------------------------------- #
 class GraphViz::Types::LblString
   def norm
     s = @data.to_s
@@ -67,6 +82,7 @@ class GraphViz::Types::LblString
   end
 end
 
+#-------------------------------------------------------------------------- #
 class GraphViz::Types::EscString
   def norm
     s = @data.to_s
@@ -74,39 +90,46 @@ class GraphViz::Types::EscString
   end
 end
 
+#-------------------------------------------------------------------------- #
 class Numeric
   def percent_of(n)
     (self.to_f / n.to_f * 100.0).to_i.to_s + "%"
   end
 end
 
+#-------------------------------------------------------------------------- #
+##
+# The master mind rules behind aaron
 class MasterMind
-  attr_reader   :graph
-  attr_reader   :host_node
-  attr_reader   :latest_targets
+  attr_reader   :graph # GraphViz object
+  attr_reader   :host_node # +Host+ object contains information about current processing host
+  attr_reader   :latest_targets # list of targets found during a search or etc.
   
   attr_accessor :verbose
   attr_accessor :os
   attr_accessor :update
   attr_accessor :backup
-  attr_accessor :loopback
-  attr_accessor :dead
+  attr_accessor :loopback # don not ignore localhost to localhost conections
+  attr_accessor :dead # do not ignore dead connections
 
   attr_accessor :name
   attr_accessor :info
   attr_accessor :deepinfo
   attr_accessor :comment
   
-  @db_nmg
-  
+  @db_axa # ActiveRecord object
+
+#-------------------------------------------------------------------------- #
   def puterr(t)
     puts "#{$aa_ban["err"]} #{t}"
   end
 
+#-------------------------------------------------------------------------- #
   def putinf(t)
     puts "#{$aa_ban["inf"]} #{t}" if @verbose
   end
- 
+
+#-------------------------------------------------------------------------- # 
   def initialize(verbose, args={})
     @latest_targets = Array.new
     
@@ -131,7 +154,8 @@ class MasterMind
 
     puts "#{$aa_ban["msm"]} I want it all and I want it now!" if @verbose
   end
-  
+
+#-------------------------------------------------------------------------- #  
   def load_db(path, must_exists = false)
     puts "#{$aa_ban["msm"]} Loading #{path}..." if @verbose
     
@@ -182,9 +206,12 @@ class MasterMind
   # rescue => details
     # puts "#{$aa_ban["err"]} load_graph failed! #{details}" if @verbose
   end
-  
+
+#-------------------------------------------------------------------------- #
+  ##
+  # initializes graph  
   def new_graph
-    @graph = GraphViz.new("netmap", :type => "graph")
+    @graph = GraphViz.new("aaron_graph", :type => "graph")
     
     @graph.node["shape"]  = $aa_node_shape
     @graph.node["color"]  = $clr_node
@@ -198,10 +225,14 @@ class MasterMind
       # raise "DEAD END!"
     end
   end
-  
+
+#-------------------------------------------------------------------------- #
+  ##
+  # draw_graph
   def draw_graph
     new_graph
     
+    putinf "Drawing graph..."
     return if @graph.nil?
     
     # load host ips
@@ -227,7 +258,7 @@ class MasterMind
       hosts_lbl << mn
       
       if not mos.nil? then
-        c = @graph.add_nodes(mn, "shape" => $aa_node_shape, "style" => "filled", "color" => $clr_cnode, :image => $aa_img_dir + @os + ".png")
+        c = @graph.add_nodes(mn, "shape" => $aa_node_shape, "style" => "filled", "color" => $clr_cnode, :image => $aa_img_dir + mos + ".png")
       else
         c = @graph.add_nodes(mn, "shape" => $aa_node_shape, "style" => "filled", "color" => $clr_cnode)
       end
@@ -256,24 +287,41 @@ class MasterMind
         dst = lbl if lbl.include? dst
       end
       
-      c = @graph.add_edges(src, dst, "headlabel" => e.dst_tag, "taillabel" => e.src_tag, "labeldistance" => "2", "color" => color)
+      dp = e.dst_tag
+      dp = dp + "\n" + $aa_known_ports[dp] unless $aa_known_ports[dp].nil?
+      
+      sp = e.src_tag
+      sp = sp + "\n" + $aa_known_ports[sp] unless $aa_known_ports[sp].nil?
+      
+      c = @graph.add_edges(src, dst, "headlabel" => dp, "taillabel" => sp, "labeldistance" => "2", "color" => color)
     end
   end
-  
+
+#-------------------------------------------------------------------------- #
   def save_png(path)
     draw_graph if @graph.nil?
     @graph.output( :png => "#{path}.png" )
   # rescue => details
     # puterr "save_png failed! #{details}"
   end
-  
+
+#-------------------------------------------------------------------------- #
   def save_pdf(path)
     draw_graph if @graph.nil?
     @graph.output( :pdf => "#{path}.pdf" )
   # rescue => details
     # puterr "save_pdf failed! #{details}"
   end
-  
+
+#-------------------------------------------------------------------------- #  
+  def save_graph(path)
+    draw_graph if @graph.nil?
+    @graph.output( $axa_format => "#{path}.#{$axa_format}" )
+  # rescue => details
+    # puterr "save_pdf failed! #{details}"
+  end
+
+#-------------------------------------------------------------------------- #  
   def detect_os_based_on_os_version(data)
     @os = "auto"
     
@@ -311,8 +359,30 @@ class MasterMind
     
     puts "OS Detected: #{max_os} | score: #{max_mc} of #{data.count("\n")}"
     @os = max_os
+    
+    return max_mc
   end
-  
+
+#-------------------------------------------------------------------------- #
+  def detect_os_based_on_a_bunch_of_netstat(nss)
+    mx = 0
+    mo = "linux"
+    
+    nss.each do |ns|
+      m = detect_os_based_on_netstat ns
+      
+      if m > mx then
+        mx = m
+        mo = @os
+      end
+    end
+    
+    @os = mo
+    
+    puts "[Final Guess] OS Detected: #{@os} | max freq: #{mx}}"
+  end
+
+#-------------------------------------------------------------------------- #  
   def parse_netstat(data)
     detect_os_based_on_netstat data if @os == "auto"
     
@@ -449,11 +519,13 @@ class MasterMind
     end
     puts
   end
-  
+
+#-------------------------------------------------------------------------- #  
   def clear_latest_targets
     latest_targets.clear
   end
-  
+
+#-------------------------------------------------------------------------- #  
   def add_to_latest_targets(ip)
     tgt = Hash.new
     tgt[:ip] = ip.addr
@@ -465,7 +537,8 @@ class MasterMind
     tgt[:comment] = ip.host.comment unless ip.host.nil? or ip.host.comment.nil?
     latest_targets << tgt
   end
-  
+
+#-------------------------------------------------------------------------- #  
   def print_ports(host)
     ip = Ip.find(:first, :conditions => {:addr => host})
     puterr "print_ports: HOST NOT FOUND: #{host}" if ip.nil?
@@ -473,15 +546,25 @@ class MasterMind
     
     es = ip.start_edges
     
-    if es.nil? then
-      putinf "No Connection!"
-      return
-    end
+    unless es.nil? then
+      puts "Open Ports:"
+      es.each do |e|
+        next unless e.type_tag.downcase.include? "list" # LISTENNING
+        print "\t#{e.src_tag}"
+        print ":\t#{$aa_known_ports[e.src_tag]}" unless $aa_known_ports[e.src_tag].nil?
+        puts
+      end
+    end  
     
-    puts "Open Ports:"
-    es.each do |e|
-      next unless e.type_tag.downcase.include? "list" # LISTENNING
-      puts "\te.src_tag"
+    es = ip.end_edges
+    
+    unless es.nil? then
+      es.each do |e|
+        next if e.type_tag.downcase.include? "list" # LISTENNING
+        print "\t#{e.dst_tag}"
+        print ":\t#{$aa_known_ports[e.dst_tag]}" unless $aa_known_ports[e.dst_tag].nil?
+        puts
+      end
     end
   end
   
@@ -515,7 +598,8 @@ class MasterMind
       i = i + 1
     end
   end
-  
+
+#-------------------------------------------------------------------------- #  
   def print_info(host)
     clear_latest_targets
     
@@ -614,7 +698,8 @@ class MasterMind
     
     puts "Nothing matched your search query!" if not_found
   end
-  
+
+#-------------------------------------------------------------------------- #  
   def edit(host)
     ip = Ip.find(:first, :conditions => {:addr => host})
     puterr "edit: HOST NOT FOUND: #{host}" if ip.nil? or ip.host.nil?
@@ -637,4 +722,49 @@ class MasterMind
     
     ip.host.save
   end
+  
+#-------------------------------------------------------------------------- #
+  ##
+  # TODO
+  def add_new_host
+    ip = IP.new
+    ip.host = Host.new
+    
+    puts "New IP:"
+    ip.addr = STDIN.gets
+    
+    puts "New Name:"
+    ip.host.name = STDIN.gets
+    
+    puts "New Info:"
+    ip.host.info = STDIN.gets
+    
+    puts "New Comment:"
+    ip.host.comment = STDIN.gets  
+    
+    ip.host.save
+    ip.save
+  end
+  
+#-------------------------------------------------------------------------- #
+  ##
+  # TODO
+  def add_new_connection
+    e = Edge.new
+    
+    puts "Source IP:"
+    puts "Source Port:"
+    puts "Destination IP:"
+    puts "Destination Port:"
+    puts "Protocol:"
+    puts "Type (write LISTENING if source IP is a server):"
+    puts "Comment:"
+  end
+  
+#-------------------------------------------------------------------------- #
+  ##
+  # TODO
+  def remove_host(host)
+  end
+
 end

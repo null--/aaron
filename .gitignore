@@ -1,10 +1,10 @@
 # Logs and databases #
 ######################
 *.log
-*.sql
-*.sqlite
-*.sqlite3
+*.axa
+*.ns
 bup/*
+doc/*
 
 # EDITOR
 ######################
