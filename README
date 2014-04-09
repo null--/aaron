@@ -1,6 +1,7 @@
 aaron
 ======
-In loving memory of tireless internet activist, "Aaron Swartz" .
+  In loving memory of tireless Internet activist, "Aaron Swartz".
+======
 Find a way to go deep inside your target network to get the "Arkenstone".
 Designed for hacktists, professional penetration testers and APT teams.
 
@@ -26,8 +27,6 @@ Designed for hacktists, professional penetration testers and APT teams.
   # Core
     - Search!
     - Automated OS detection (based on netstat results)
-    - Supports SSH ans PSExec (SMB) protocols
-    - Supports "adb shell" (android devices)
     
   # Graph
     - Draw network graph of your local machine
@@ -37,13 +36,14 @@ Designed for hacktists, professional penetration testers and APT teams.
   
   # Advanced Targeting
     - Add hosts to metasploit database
-    - Execute commands via an active METERPRETER session
-    
+    - Supports SSH ans PSExec (SMB) protocols
+    - Supports "adb shell" (android devices)  
+
 #TODO
   - png examples folder
   - aaron search + regex
   - BSD test
-  - execute commands through a meterpreter session
+  - test, test, test  
   
 #more                                    
   - Sqlite3 Database (.axa file):

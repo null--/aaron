@@ -33,7 +33,7 @@ require './mastermind.rb'
 class BADPipe
   @_io
   
-  def initialize(cmd = "msfconsole", delim)
+  def initialize(cmd = "msfconsole", delim = "[0m> ")
     @_io = IO.popen(cmd, "w+")
     
     if @_io.nil? then
@@ -50,11 +50,11 @@ class BADPipe
     
     ot = ""
     while c = @_io.read(1) do
-      # puts "---> " + c
+      # print " " + c
       ot = ot + c
       break if ot.include? delim
     end
-    
+    puts "------------ DONE -----------"
     tot = ""
     first = true
     ot.split("\n").each do |ln|
@@ -109,7 +109,7 @@ class Aaron < Thor
       end
       
       puts "METASPLOIT: Firing up metasploit (this may take a while)..."
-      msf = BADPipe.new
+      msf = BADPipe.new("msfconsole")
       ot = msf.exec("db_status")
       putinf "METASPLOIT: #{ot}"
       unless ot.include? "connected" then
@@ -243,10 +243,23 @@ Another cool tool is aaron_import.rb. copy it to metasploit as a pluin folder an
 
     if not ssh.nil? then
       puts "#{$aa_ban["inf"]} ssh: Connection Established, OS: #{options[:os]}" if options[:verbose]
-      hs = ssh.exec!( $aa_hostname[ options[:os] ] )
-      ov = ssh.exec!( $aa_os_ver[ options[:os] ] )      
-      rt = ssh.exec!( $aa_route[ options[:os] ] )            
-      ns = ssh.exec!( $aa_netstat[ options[:os] ] )
+      
+      if options[:os] == "auto" then
+        $aa_os_ver.each do |os, cmd|
+          ov = ssh.exec!( cmd )
+          @master.detect_os_based_on_os_version ov
+          
+          if not @master.os == "auto" then
+            break
+          end
+        end
+      end
+          
+      hs = ssh.exec!( $aa_hostname[ @master.os ] )
+      ov = ssh.exec!( $aa_os_ver[ @master.os ] )
+      ad = ssh.exec!( $aa_adapter[ @master.os ] )      
+      rt = ssh.exec!( $aa_route[ @master.os ] )            
+      ns = ssh.exec!( $aa_netstat[ @master.os ] )
       puts "#{$aa_ban["inf"]} netstat result:\n#{ns}" if options[:verbose]
       
       prologue
@@ -265,49 +278,6 @@ Another cool tool is aaron_import.rb. copy it to metasploit as a pluin folder an
   #  puts "#{$aa_ban["err"]} SSH Failed #{details}"    
   end
   
-  desc "meterpreter {SESION_ID}", "#{$aa_ban["exp"]} Execute commands through a metasploit shell session (NOT IMPLEMENTED YET)" 
-  method_option :meterpreter,       :type => :boolean,  :default => false
-  method_option :os,                :type => :string,  :default => "#{$aa_os[0]}", :required => true,
-                :banner => "TARGET_OS", :desc => "Values: #{$aa_os}"
-  def meterpreter(sid)
-    puts "#{$aa_ban["inf"]} adb IS NOT IMPLEMENTED YET!" if options[:verbose]
-    return
-    
-    msf = BADPipe.new
-    
-    if not msf.nil? then
-      puts "#{$aa_ban["inf"]} METASPLOIT: OS: #{options[:os]}" if options[:verbose]
-      
-      ot = msf.exec("sessions -i #{sid}")
-      
-      putinf "METASPLOIT: #{ot}"
-      if ot.include? "Invalid" then
-        puterr "METASPLOIT: Session not found!"
-        return
-      end
-      
-      ot = msf.exec("shell") if options[:meterpreter]
-      
-      hs = msf.exec( $aa_hostname[ options[:os] ] )
-      ov = msf.exec( $aa_os_ver[ options[:os] ] )
-      ad = msf.exec( $aa_adapter[ options[:os] ] )
-      rt = msf.exec( $aa_route[ options[:os] ] )            
-      ns = msf.exec( $aa_netstat[ options[:os] ] )
-      puts "#{$aa_ban["inf"]} netstat result:\n#{ns}" if options[:verbose]
-      
-      prologue
-      
-      master.name = hs
-      master.info = ov
-      master.deepinfo = ad + rt 
-      
-      master.parse_netstat   ( ns )
-      
-      epilogue
-      msf.exec("exit")
-    end
-  end
-    
   desc "psexec {HOST}", "#{$aa_ban["exp"]} Execute commands via a 'psexec' connection the remote (Windows) host (requires metasploit)"
   method_option :user,        :type => :string,   :alias => "-l", :banner => "SMB_USERNAME", :require => true
   method_option :pass,        :type => :string,   :alias => "-p", :banner => "SMB_PASSWORD", :desc => "SMB Password or a valid SAM hash (pass-the-hash)"
@@ -316,7 +286,7 @@ Another cool tool is aaron_import.rb. copy it to metasploit as a pluin folder an
     :banner => "TARGET_OS",
     :desc => "Values: #{$aa_os}"
   def psexec(host)
-    puts "#{$aa_ban["inf"]} psexec: host=#{host}, user=#{options[:user]}" if options[:verbose]
+    putinf "psexec: host=#{host}, user=#{options[:user]}"
   
     cmd = "msfcli auxiliary/admin/smb/psexec_command RHOSTS='#{host}' SMBUser='#{options[:user]}'"
     cmd = cmd + " SMBPass='#{options[:pass]}'" if not options[:pass].nil?
@@ -328,7 +298,7 @@ Another cool tool is aaron_import.rb. copy it to metasploit as a pluin folder an
     rt = %x( #{cmd} COMMAND='#{$aa_route[ options[:os] ]}' E )
     ns = %x( #{cmd} COMMAND='#{$aa_netstat[ options[:os] ]}' E )
     
-    puts "#{$aa_ban["inf"]} netstat result:\n#{ns}" if options[:verbose]
+    putinf "netstat result:\n#{ns}"
     prologue
     
     master.name = hs
@@ -349,16 +319,16 @@ Another cool tool is aaron_import.rb. copy it to metasploit as a pluin folder an
     if not a_.nil? then
       
       hs = a_.exec( $aa_hostname[ options[:os] ], ":/ $")
-      puts hs
+      putinf hs
       ov = a_.exec( $aa_os_ver[ options[:os] ], ":/ $" )
-      puts ov
+      putinf ov
       ad = a_.exec( $aa_adapter[ options[:os] ], ":/ $" )
-      puts ad
+      putinf ad
       rt = a_.exec( $aa_route[ options[:os] ], ":/ $" )            
-      puts rt
+      putinf rt
       ns = a_.exec( $aa_netstat[ options[:os] ], ":/ $" )
-      puts ns
-      puts "#{$aa_ban["inf"]} netstat result:\n#{ns}" if options[:verbose]
+      putinf ns
+      putinf "netstat result:\n#{ns}"
       
       prologue
       

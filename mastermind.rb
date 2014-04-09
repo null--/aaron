@@ -23,6 +23,7 @@ require 'active_record'
 class Host < ActiveRecord::Base
   has_many :ips # , :class_name => "IP", :foreign_key => "host_id"
   
+  
   def find_os
     return nil if self.info.nil?
     
@@ -36,7 +37,6 @@ class Host < ActiveRecord::Base
     
     nil
   end
-  
 end
 
 class Ip < ActiveRecord::Base
@@ -272,6 +272,20 @@ class MasterMind
     @graph.output( :pdf => "#{path}.pdf" )
   # rescue => details
     # puterr "save_pdf failed! #{details}"
+  end
+  
+  def detect_os_based_on_os_version(data)
+    @os = "auto"
+    
+    @os = "win"      if data.downcase.include? "win"
+    @os = "linux"    if data.downcase.include? "linux"
+    @os = "bsd"      if data.downcase.include? "bsd"
+    @os = "solaris"  if data.downcase.include? "sun"
+    @os = "solaris"  if data.downcase.include? "solaris"
+    @os = "solaris"  if data.downcase.include? "oracle"
+    @os = "linux"    if data.downcase.include? "linux"
+    
+    puts "OS Detected: #{@os}"
   end
   
   def detect_os_based_on_netstat(data)

@@ -26,7 +26,7 @@ $nfo = <<-NFO
   #{$aaron_name}, by _null_ - #{$aa_version} - 2014 - GPLv3
     https://github.com/null--/aaron
   
-  In loving memory of internet activist, "Aaron Swartz".
+  In loving memory of Internet activist, "Aaron Swartz".
     http://en.wikipedia.org/wiki/Aaron_Swartz
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 NFO
