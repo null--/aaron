@@ -202,6 +202,7 @@ class Aaron < Thor
       super("rmconn")
       super("rmhost")
       super("search")
+      super("show")
       super("ssh")
       super("stdin")
     end
