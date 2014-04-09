@@ -35,7 +35,7 @@ $lastnfo = "DONE!"
 
 $aa_img_dir     = "./img/"
 $aa_tmp_dir     = "./tmp/"
-$aa_ext         = ".nmg"
+$aa_ext         = ".axa"
 
 $nmg_format     = "canon"
 # $nmg_format     = "dot"
@@ -61,7 +61,7 @@ $aa_ban = {
 
 #TODO: detect os automatically
 $aa_os = [
-  # "auto",
+  "auto",
   "linux",
   "bsd",
   "solaris",

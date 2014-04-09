@@ -23,27 +23,30 @@ Designed for hacktists, professional penetration testers and APT teams.
   - Find high value targets by looking at a graphical map!
 
 #Features
-  # Visualization
+  # Core
+    - Search!
+    - Automated OS detection (based on netstat results)
+    - Supports SSH ans PSExec (SMB) protocols
+    - Supports "adb shell" (android devices)
+    
+  # Graph
     - Draw network graph of your local machine
     - Draw a network graph based on results collected from several remote hosts
     - Update an existing network graph
     - Export graphs in png and pdf formats
-    
+  
   # Advanced Targeting
-    - Supports SSH, PSExec (SMB) protocols
     - Add hosts to metasploit database
-    - Search results
-
+    - Execute commands via an active METERPRETER session
+    
 #TODO
   - png examples folder
-  - aaron search + regex 
-  - ADB
+  - aaron search + regex
   - BSD test
-  - Find os type automatically (--os=auto)
-  - execute commands through a msf session (shell and meterpreter)
+  - execute commands through a meterpreter session
   
 #more                                    
-  - Database:
+  - Sqlite3 Database (.axa file):
      +----------------+           +-----------------+ 
      | Host           |           | Edge            | 
      +----------------+           +-----------------+ 

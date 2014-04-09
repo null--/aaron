@@ -173,7 +173,7 @@ class MasterMind
             table.column :src_tag,    :string
             table.column :dst_tag,    :string
             table.column :proto,      :string
-            table.column :type,       :string
+            table.column :type_tag,       :string
             table.column :comment,    :text
           end
         end
@@ -274,7 +274,34 @@ class MasterMind
     # puterr "save_pdf failed! #{details}"
   end
   
+  def detect_os_based_on_netstat(data)
+    max_os = "linux"
+    max_mc = 0
+    
+    $aa_netstat_regex.each do |os, rex|
+      mc = 0
+      
+      data.lines.each do |ln|
+        cn = rex.match(ln)
+        
+        if not cn.nil? then
+          mc = mc + 1
+        end
+      end
+      
+      if mc > max_mc then
+        max_mc = mc
+        max_os = os
+      end
+    end
+    
+    puts "OS Detected: #{max_os} | score: #{max_mc} of #{data.count("\n")}"
+    @os = max_os
+  end
+  
   def parse_netstat(data)
+    detect_os_based_on_netstat data if @os == "auto"
+    
     rex = $aa_netstat_regex[@os]
     if !rex then
       puts "#{$aa_ban["err"]} Unkown OS"
@@ -321,6 +348,10 @@ class MasterMind
     if new_node then
       @host_node = Host.new
       @host_node.save
+    end
+    
+    if @info.nil? then
+      @info = @os
     end
     
     @host_node.name = @name
@@ -393,13 +424,13 @@ class MasterMind
         e.dst_tag = cn[:dport]
         e.dst_ip_id = right.id
         
-        e.type = cn[:type] if cn.names.include? "type"
+        e.type_tag = cn[:type] if cn.names.include? "type"
         e.save
         
         print "Edge: " + e.proto + " # " if @verbose
         print e.src_ip.addr + " : " + e.src_tag + " <--> " + 
             e.dst_ip.addr + " : " + e.dst_tag + 
-            " (" + e.type + ")" + "\n" if @verbose
+            " (" + e.type_tag + ")" + "\n" if @verbose
       end
     end
     puts
@@ -435,7 +466,7 @@ class MasterMind
     
     puts "Open Ports:"
     es.each do |e|
-      next unless e.type.downcase.include? "list" # LISTENNING
+      next unless e.type_tag.downcase.include? "list" # LISTENNING
       puts "\te.src_tag"
     end
   end

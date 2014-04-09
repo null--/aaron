@@ -30,38 +30,44 @@ require 'open3'
 require './aaron-defs.rb'
 require './mastermind.rb'
 
-class MSFPipe
-  @_in
-  @_out
-  @_err
+class BADPipe
+  @_io
   
-  @_b
-  
-  def initialize
-    @_b = "[0m> "
+  def initialize(cmd = "msfconsole", delim)
+    @_io = IO.popen(cmd, "w+")
     
-    @_in, @_out, @_err = Open3.popen3("msfconsole", "w+")
-    
-    if @_in.nil? then
+    if @_io.nil? then
       raise "metasploit not found"
     end
     
-    exec
+    exec nil, delim
     
-    puts "METASPLOIT: ready"
+    puts "BADPipe: ready"
   end
   
-  def exec(cmd = nil, delim = @_b)
-    @_in.puts cmd unless cmd.nil?
+  def exec(cmd = nil, delim = "[0m> ")
+    @_io.puts cmd unless cmd.nil?
     
     ot = ""
-    while c = @_out.read(1) do
+    while c = @_io.read(1) do
       # puts "---> " + c
       ot = ot + c
       break if ot.include? delim
     end
     
-    return ot
+    tot = ""
+    first = true
+    ot.split("\n").each do |ln|
+      next if ln == "\n"
+      next if ln.include? delim
+      if first then
+        first = false
+        next
+      end
+      tot = tot + ln + "\n"
+    end
+    
+    return tot
   end
 end
 
@@ -103,7 +109,7 @@ class Aaron < Thor
       end
       
       puts "METASPLOIT: Firing up metasploit (this may take a while)..."
-      msf = MSFPipe.new
+      msf = BADPipe.new
       ot = msf.exec("db_status")
       putinf "METASPLOIT: #{ot}"
       unless ot.include? "connected" then
@@ -132,19 +138,19 @@ class Aaron < Thor
       puts <<-BANNER
 Examples:
   10. Create a new diagram (or update and exsisting one) from a netstat output file, then generate report in png and pdf formats
-    ./aaron.rb file netstat.out --verbose --png --pdf --project test.nmg
+    ./aaron.rb file netstat.out --verbose --png --pdf --project test.axa
   11. Create a new diagram (remove old #{$aa_ext} file) from a netstat output file
-    ./aaron.rb file netstat-win.out --verbose --png --pdf --os win --project test.nmg --new
+    ./aaron.rb file netstat-win.out --verbose --png --pdf --project test.axa --new
   20. Use SSH to create a diagram (against a linux machine)
-    ./aaron.rb ssh localhost --user temp --pass temp --verbose --png --pdf --project test.nmg
+    ./aaron.rb ssh localhost --user temp --pass temp --verbose --png --pdf --project test.axa
   21. More advanced SSH (against a windows machine)
-    ./aaron.rb ssh example.com --user root --pass toor --verbose --png --pdf --project test.nmg --os win --port 80 --key ~/.ssh/id_rsa --new
+    ./aaron.rb ssh example.com --user root --pass toor --verbose --png --pdf --project test.axa --port 80 --key ~/.ssh/id_rsa --new
   30. Pipe netstat result into aaron
-    cat netstat-win.out | ./aaron.rb stdin --verbose --png --pdf --os linux --project test.nmg
+    cat netstat-win.out | ./aaron.rb stdin --verbose --png --pdf --project test.axa
     or
-    netstat -antu | ./aaron.rb stdin --verbose --png --pdf --os linux --project test.nmg
+    netstat -antu | ./aaron.rb stdin --verbose --png --pdf --project test.axa
   40. Execute command on remote machine via SMB (psexec)
-    ./aaron.rb psexec 192.168.13.50 --os win --user Administrator --pass 123456 --domain WORKGROUP --verbose --png --pdf --project test.nmg
+    ./aaron.rb psexec 192.168.13.50 --user Administrator --pass 123456 --domain WORKGROUP --verbose --png --pdf --project test.axa
   50. Print all windows clients connected to 192.168.0.1 on port 22 then add them to metasploit
     ./aaron.rb search --dst 192.168.0.1 --dst_port 22 --src_os win --msf --msf_workspace default
   51. Show all info about a host then add it to metasploit
@@ -239,7 +245,6 @@ Another cool tool is aaron_import.rb. copy it to metasploit as a pluin folder an
       puts "#{$aa_ban["inf"]} ssh: Connection Established, OS: #{options[:os]}" if options[:verbose]
       hs = ssh.exec!( $aa_hostname[ options[:os] ] )
       ov = ssh.exec!( $aa_os_ver[ options[:os] ] )      
-      ad = ssh.exec!( $aa_adapter[ options[:os] ] )
       rt = ssh.exec!( $aa_route[ options[:os] ] )            
       ns = ssh.exec!( $aa_netstat[ options[:os] ] )
       puts "#{$aa_ban["inf"]} netstat result:\n#{ns}" if options[:verbose]
@@ -260,16 +265,15 @@ Another cool tool is aaron_import.rb. copy it to metasploit as a pluin folder an
   #  puts "#{$aa_ban["err"]} SSH Failed #{details}"    
   end
   
-  desc "metasploit {SESION_ID}", "#{$aa_ban["exp"]} Execute commands through a metasploit shell session" 
-  method_option :shell,             :type => :boolean,  :default => true
+  desc "meterpreter {SESION_ID}", "#{$aa_ban["exp"]} Execute commands through a metasploit shell session (NOT IMPLEMENTED YET)" 
   method_option :meterpreter,       :type => :boolean,  :default => false
   method_option :os,                :type => :string,  :default => "#{$aa_os[0]}", :required => true,
                 :banner => "TARGET_OS", :desc => "Values: #{$aa_os}"
-  def metasploit(sid)
+  def meterpreter(sid)
     puts "#{$aa_ban["inf"]} adb IS NOT IMPLEMENTED YET!" if options[:verbose]
     return
     
-    msf = MSFPipe.new
+    msf = BADPipe.new
     
     if not msf.nil? then
       puts "#{$aa_ban["inf"]} METASPLOIT: OS: #{options[:os]}" if options[:verbose]
@@ -282,23 +286,25 @@ Another cool tool is aaron_import.rb. copy it to metasploit as a pluin folder an
         return
       end
       
-      # hs = msf.exec( $aa_hostname[ options[:os] ] )
-      # ov = msf.exec( $aa_os_ver[ options[:os] ] )      
-      # ad = msf.exec( $aa_adapter[ options[:os] ] )
-      # rt = msf.exec( $aa_route[ options[:os] ] )            
-      # ns = msf.exec( $aa_netstat[ options[:os] ] )
-      # puts "#{$aa_ban["inf"]} netstat result:\n#{ns}" if options[:verbose]
+      ot = msf.exec("shell") if options[:meterpreter]
       
-      # prologue
+      hs = msf.exec( $aa_hostname[ options[:os] ] )
+      ov = msf.exec( $aa_os_ver[ options[:os] ] )
+      ad = msf.exec( $aa_adapter[ options[:os] ] )
+      rt = msf.exec( $aa_route[ options[:os] ] )            
+      ns = msf.exec( $aa_netstat[ options[:os] ] )
+      puts "#{$aa_ban["inf"]} netstat result:\n#{ns}" if options[:verbose]
       
-      # master.name = hs
-      # master.info = ov
-      # master.deepinfo = ad + rt 
+      prologue
       
-      # master.parse_netstat   ( ns )
+      master.name = hs
+      master.info = ov
+      master.deepinfo = ad + rt 
       
-      # epilogue
-      # msf.exec("exit")
+      master.parse_netstat   ( ns )
+      
+      epilogue
+      msf.exec("exit")
     end
   end
     
@@ -306,7 +312,7 @@ Another cool tool is aaron_import.rb. copy it to metasploit as a pluin folder an
   method_option :user,        :type => :string,   :alias => "-l", :banner => "SMB_USERNAME", :require => true
   method_option :pass,        :type => :string,   :alias => "-p", :banner => "SMB_PASSWORD", :desc => "SMB Password or a valid SAM hash (pass-the-hash)"
   method_option :domain,      :type => :string,   :default => "WORKGROUP", :alias => "-d", :banner => "SMB_DOMAIN"
-  method_option :os,       :type => :string,  :default => "#{$aa_os[0]}", :required => true,
+  method_option :os,       :type => :string,  :default => "win", :required => true,
     :banner => "TARGET_OS",
     :desc => "Values: #{$aa_os}"
   def psexec(host)
@@ -333,12 +339,38 @@ Another cool tool is aaron_import.rb. copy it to metasploit as a pluin folder an
     epilogue
   end
 
-  desc "adb", "#{$aa_ban["exp"]} Execute commands via an 'adb' shell (android)"
-  method_option :os,       :type => :string,  :default => "#{$aa_os[0]}", :required => true,
+  desc "adb", "#{$aa_ban["exp"]} Execute commands via an 'adb' shell (android) (NOT IMPLEMENTED YET)"
+  method_option :os,       :type => :string,  :default => "linux", :required => true,
     :banner => "TARGET_OS",
     :desc => "Values: #{$aa_os}"
-  def adb()
-    puts "#{$aa_ban["inf"]} adb IS NOT IMPLEMENTED YET!" if options[:verbose]
+  def adb
+    a_ = BADPipe.new("adb shell", ":/ $")
+    
+    if not a_.nil? then
+      
+      hs = a_.exec( $aa_hostname[ options[:os] ], ":/ $")
+      puts hs
+      ov = a_.exec( $aa_os_ver[ options[:os] ], ":/ $" )
+      puts ov
+      ad = a_.exec( $aa_adapter[ options[:os] ], ":/ $" )
+      puts ad
+      rt = a_.exec( $aa_route[ options[:os] ], ":/ $" )            
+      puts rt
+      ns = a_.exec( $aa_netstat[ options[:os] ], ":/ $" )
+      puts ns
+      puts "#{$aa_ban["inf"]} netstat result:\n#{ns}" if options[:verbose]
+      
+      prologue
+      
+      master.name = hs
+      master.info = ov
+      master.deepinfo = ad + rt 
+      
+      master.parse_netstat   ( ns )
+      
+      epilogue
+      a_.exec("exit")
+    end
   end
   
   desc "search", "Search something! (e.g. all windows clients connected to 192.168.0.1 on port 22)"
@@ -349,7 +381,7 @@ Another cool tool is aaron_import.rb. copy it to metasploit as a pluin folder an
   method_option :src,         :type => :string, :alias => "-s",   :banner => "SRC_ADDRESS", :desc => "source filter"
   method_option :dst,         :type => :string, :alias => "-d",   :banner => "DST_ADDRESS", :desc => "destination filter"
   method_option :text,        :type => :string, :alias => "-t",   :banner => "TEXT",        :desc => "text filter"
-  method_option :project,  :type => :string, :default => 'test.nmg', :alias => "-i", :required => true,
+  method_option :project,  :type => :string, :default => 'test.axa', :alias => "-i", :required => true,
       :desc => "An existing #{$aa_ext}"
   method_option :msf,         :type => :boolean, :default => false, :desc => "Add results to metasploit"
   method_option :msf_workspace,         :type => :string, :default => "default", :desc => "Set metasploit workspace"
@@ -364,14 +396,14 @@ Another cool tool is aaron_import.rb. copy it to metasploit as a pluin folder an
                    options[:dst],
                    options[:text])
      
-     feed_msf(options[:msf_workspace]) if options[:msf]
+    feed_msf(options[:msf_workspace]) if options[:msf]
   end
   
   desc "show", "Print more info about a HOST (some of them are not shown in png or pdf)"
   method_option :info,        :type => :string, :alias => "-i", :banner => "HOST", :desc => "Show all information about a host"
   method_option :port,        :type => :boolean, :banner => "HOST", :desc => "List open ports on a host"
   method_option :hosts,       :type => :boolean, :default => false, :alias => "-a", :desc => "Show all hosts"
-  method_option :project,  :type => :string, :default => 'test.nmg', :alias => "-i", :required => true,
+  method_option :project,  :type => :string, :default => 'test.axa', :alias => "-i", :required => true,
       :desc => "An existing #{$aa_ext}"
   method_option :msf,         :type => :boolean, :default => false, :desc => "Add results to metasploit"
   method_option :msf_workspace,         :type => :string, :default => "default", :desc => "Set metasploit workspace"
@@ -390,7 +422,7 @@ Another cool tool is aaron_import.rb. copy it to metasploit as a pluin folder an
   end
   
   desc "edit", "Edit a HOST"
-  method_option :project,  :type => :string, :default => 'test.nmg', :alias => "-i", :required => true,
+  method_option :project,  :type => :string, :default => 'test.axa', :alias => "-i", :required => true,
         :desc => "An existing #{$aa_ext}"
   def edit(host)
     @master.load_db(options[:project], true)
