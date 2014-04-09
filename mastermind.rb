@@ -83,6 +83,7 @@ end
 class MasterMind
   attr_reader   :graph
   attr_reader   :host_node
+  attr_reader   :latest_targets
   
   attr_accessor :verbose
   attr_accessor :os
@@ -107,6 +108,8 @@ class MasterMind
   end
  
   def initialize(verbose, args={})
+    @latest_targets = Array.new
+    
     @verbose = verbose
     @os = args[:os]
     @update = true
@@ -158,19 +161,20 @@ class MasterMind
         unless ActiveRecord::Base.connection.table_exists? 'ips'
           create_table :ips do |table|
             table.column :host_id,  :integer # FK
-            table.column :addr,       :string
+            table.column :addr,     :string
             table.column :comment,  :text
           end
         end
         
         unless ActiveRecord::Base.connection.table_exists? 'edges'
           create_table :edges do |table|
-            table.column :src_ip_id,   :integer
-            table.column :dst_ip_id,   :integer
-            table.column :src_tag,     :string
-            table.column :dst_tag,     :string
-            table.column :proto,    :string
-            table.column :comment,  :text
+            table.column :src_ip_id,  :integer
+            table.column :dst_ip_id,  :integer
+            table.column :src_tag,    :string
+            table.column :dst_tag,    :string
+            table.column :proto,      :string
+            table.column :type,       :string
+            table.column :comment,    :text
           end
         end
       end
@@ -389,23 +393,62 @@ class MasterMind
         e.dst_tag = cn[:dport]
         e.dst_ip_id = right.id
         
-        e.comment = cn[:type] if cn.names.include? "type"
+        e.type = cn[:type] if cn.names.include? "type"
         e.save
         
         print "Edge: " + e.proto + " # " if @verbose
         print e.src_ip.addr + " : " + e.src_tag + " <--> " + 
             e.dst_ip.addr + " : " + e.dst_tag + 
-            " (" + e.comment + ")" + "\n" if @verbose
+            " (" + e.type + ")" + "\n" if @verbose
       end
     end
     puts
   end
   
+  def clear_latest_targets
+    latest_targets.clear
+  end
+  
+  def add_to_latest_targets(ip)
+    tgt = Hash.new
+    tgt[:ip] = ip.addr
+    tgt[:name] = "N/A"
+    tgt[:name] = ip.host.name unless ip.host.nil? or ip.host.name.nil?
+    tgt[:info] = "N/A"
+    tgt[:info] = ip.host.info unless ip.host.nil? or ip.host.info.nil?
+    tgt[:comment] = "N/A"
+    tgt[:comment] = ip.host.comment unless ip.host.nil? or ip.host.comment.nil?
+    latest_targets << tgt
+  end
+  
+  def print_ports(host)
+    ip = Ip.find(:first, :conditions => {:addr => host})
+    puterr "print_ports: HOST NOT FOUND: #{host}" if ip.nil?
+    return if ip.nil?
+    
+    es = ip.start_edges
+    
+    if es.nil? then
+      putinf "No Connection!"
+      return
+    end
+    
+    puts "Open Ports:"
+    es.each do |e|
+      next unless e.type.downcase.include? "list" # LISTENNING
+      puts "\te.src_tag"
+    end
+  end
+  
   def print_hosts
+    clear_latest_targets
+    
     i = 1
     seen = Array.new
     
     Ip.find(:all).each do |ip|
+      add_to_latest_targets ip
+      
       if not ip.host.nil? and not ip.host.name.nil? then
         next if seen.include? ip.host.name
         
@@ -429,8 +472,10 @@ class MasterMind
   end
   
   def print_info(host)
+    clear_latest_targets
+    
     ip = Ip.find(:first, :conditions => {:addr => host})
-    puterr "HOST NOT FOUND" if ip.nil?
+    puterr "print_info: HOST NOT FOUND: #{host}" if ip.nil?
     return if ip.nil?
     
     if ip.host.nil? then
@@ -438,30 +483,18 @@ class MasterMind
       return
     end
     
-    puts "Name:\n" + ip.host.name + "=================" unless ip.host.name.nil?
-    puts "Info:\n" + ip.host.info + "=================" unless ip.host.info.nil?
-    puts "Deepinfo:\n" + ip.host.deepinfo + "=================" unless ip.host.deepinfo.nil?
-    puts "Comment:\n" + ip.host.comment + "=================" unless ip.host.comment.nil?
-  end
-  
-  def msf
-    hs = Host.find(:all)
-    return if hs.nil?
+    add_to_latest_targets ip
     
-    hs.each do |h|
-      ips = h.ips
-      h.name = "N/A" if h.name.nil?
-      h.info = "N/A" if h.info.nil?
-      
-      ln = h.name + " -!- " + h.info
-      ln = ln.gsub("\n", "")
-      ips.each do |i|
-        puts "-!- " + i.addr + " -!- " + ln
-      end
-    end
+    puts "IP:\n" + ip.addr
+    puts "Name:\n" + ip.host.name + "================="         unless ip.host.name.nil?
+    puts "Info:\n" + ip.host.info + "================="         unless ip.host.info.nil?
+    puts "Deepinfo:\n" + ip.host.deepinfo + "=================" unless ip.host.deepinfo.nil?
+    puts "Comment:\n" + ip.host.comment + "================="   unless ip.host.comment.nil?
   end
   
   def search(sos, dos, sp, dp, src, dst, txt)
+    clear_latest_targets
+    
     ips = Ip.find(:all)
     
     not_found = true
@@ -528,6 +561,8 @@ class MasterMind
       # puts sos_m.to_s + dos_m.to_s + sp_m.to_s + dp_m.to_s + src_m.to_s + dst_m.to_s + txt_m.to_s
       if sos_m and dos_m and sp_m and dp_m and src_m and dst_m and txt_m then
         not_found = false
+        
+        add_to_latest_targets ip
         puts ip.addr
       end
     end
@@ -537,7 +572,7 @@ class MasterMind
   
   def edit(host)
     ip = Ip.find(:first, :conditions => {:addr => host})
-    puterr "HOST NOT FOUND" if ip.nil? or ip.host.nil?
+    puterr "edit: HOST NOT FOUND: #{host}" if ip.nil? or ip.host.nil?
     return if ip.nil? or ip.host.nil?
     
     puts "Name:"

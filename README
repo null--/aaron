@@ -23,11 +23,16 @@ Designed for hacktists, professional penetration testers and APT teams.
   - Find high value targets by looking at a graphical map!
 
 #Features
-  - Draw network graph of your local machine
-  - Draw a network graph based on results collected from several remote hosts
-  - Update an existing network graph
-  - Supports SSH, ADB and PSExec (SMB) protocols
-  - Export graphs in png and pdf formats
+  # Visualization
+    - Draw network graph of your local machine
+    - Draw a network graph based on results collected from several remote hosts
+    - Update an existing network graph
+    - Export graphs in png and pdf formats
+    
+  # Advanced Targeting
+    - Supports SSH, PSExec (SMB) protocols
+    - Add hosts to metasploit database
+    - Search results
 
 #TODO
   - png examples folder
@@ -35,8 +40,8 @@ Designed for hacktists, professional penetration testers and APT teams.
   - ADB
   - BSD test
   - Find os type automatically (--os=auto)
-  - metasploit aaron_import
-
+  - execute commands through a msf session (shell and meterpreter)
+  
 #more                                    
   - Database:
      +----------------+           +-----------------+ 
@@ -48,7 +53,8 @@ Designed for hacktists, professional penetration testers and APT teams.
      | deepinfo       |           | src_tag         | 
      | comment        |           | dst_tag         | 
      |                |           | proto           | 
-     |                |           | comment         | 
+     |                |           | type            | 
+     |                |           | comment         |
      +----------------+           +-----------------+ 
             ^                          | |            
             |                          | |            

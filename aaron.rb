@@ -26,20 +26,64 @@ along with Graviton.  If not, see http://www.gnu.org/licenses/.
 
 require 'thor'
 require 'net/ssh'
+require 'open3'
 require './aaron-defs.rb'
 require './mastermind.rb'
+
+class MSFPipe
+  @_in
+  @_out
+  @_err
+  
+  @_b
+  
+  def initialize
+    @_b = "[0m> "
+    
+    @_in, @_out, @_err = Open3.popen3("msfconsole", "w+")
+    
+    if @_in.nil? then
+      raise "metasploit not found"
+    end
+    
+    exec
+    
+    puts "METASPLOIT: ready"
+  end
+  
+  def exec(cmd = nil, delim = @_b)
+    @_in.puts cmd unless cmd.nil?
+    
+    ot = ""
+    while c = @_out.read(1) do
+      # puts "---> " + c
+      ot = ot + c
+      break if ot.include? delim
+    end
+    
+    return ot
+  end
+end
 
 class Aaron < Thor
   attr_reader   :master
 
   def initialize(*args)
     super
-    puts "#{$nfo}" if not ARGV[0].include? "msf" # silenced
+    puts "#{$nfo}" # if not ARGV[0].include? "msf" # silenced
     
     @master = MasterMind.new(options[:verbose], options)
   end
   
   no_commands do
+    def puterr(t)
+      puts "#{$aa_ban["err"]} #{t}"
+    end
+
+    def putinf(t)
+      puts "#{$aa_ban["inf"]} #{t}" if options[:verbose]
+    end
+    
     def prologue
       master.os = options[:os]
       master.load_db(options[:project])
@@ -50,6 +94,33 @@ class Aaron < Thor
       master.save_pdf(options[:project])  if options[:pdf]
       
       puts "#{$lastnfo}"
+    end
+    
+    def feed_msf(ws)
+      if @master.latest_targets.empty? then
+        puts "METASPLOIT: No Target!"
+        return
+      end
+      
+      puts "METASPLOIT: Firing up metasploit (this may take a while)..."
+      msf = MSFPipe.new
+      ot = msf.exec("db_status")
+      putinf "METASPLOIT: #{ot}"
+      unless ot.include? "connected" then
+        puts "METASPLOIT: start msfdb first! (on kali linux you may try: /etc/init.d/postgresql start)"
+        msf.exec("exit")
+      end
+      ot = msf.exec("workspace #{ws}")
+      putinf "METASPLOIT: #{ot}"
+      if ot.include? "not found" then
+        msf.exec("exit")
+      end
+      
+      @master.latest_targets.each do |tgt|
+        ot = msf.exec("hosts -a #{tgt[:ip]}")
+        puts "METASPLOIT: #{ot}"
+      end
+      putinf "METASPLOIT: DONE!"
     end
   end
 
@@ -74,8 +145,14 @@ Examples:
     netstat -antu | ./aaron.rb stdin --verbose --png --pdf --os linux --project test.nmg
   40. Execute command on remote machine via SMB (psexec)
     ./aaron.rb psexec 192.168.13.50 --os win --user Administrator --pass 123456 --domain WORKGROUP --verbose --png --pdf --project test.nmg
-  50. Print all windows clients connected to 192.168.0.1 on port 22
-    ./aaron.rb search --dst 192.168.0.1 --dst_port 22 --src_os win
+  50. Print all windows clients connected to 192.168.0.1 on port 22 then add them to metasploit
+    ./aaron.rb search --dst 192.168.0.1 --dst_port 22 --src_os win --msf --msf_workspace default
+  51. Show all info about a host then add it to metasploit
+    ./aaron.rb show --info 192.168.0.1
+  52. Show all hosts then add them to metasploit
+    ./aaron.rb show --hosts
+  53. Show open ports (listenning port) on a host
+    ./aaron.rb show --port 192.168.0.1
     
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 Does PNG output SUCK? Do you love that old school black and white shell?
@@ -182,10 +259,52 @@ Another cool tool is aaron_import.rb. copy it to metasploit as a pluin folder an
   # rescue => details
   #  puts "#{$aa_ban["err"]} SSH Failed #{details}"    
   end
-
+  
+  desc "metasploit {SESION_ID}", "#{$aa_ban["exp"]} Execute commands through a metasploit shell session" 
+  method_option :shell,             :type => :boolean,  :default => true
+  method_option :meterpreter,       :type => :boolean,  :default => false
+  method_option :os,                :type => :string,  :default => "#{$aa_os[0]}", :required => true,
+                :banner => "TARGET_OS", :desc => "Values: #{$aa_os}"
+  def metasploit(sid)
+    puts "#{$aa_ban["inf"]} adb IS NOT IMPLEMENTED YET!" if options[:verbose]
+    return
+    
+    msf = MSFPipe.new
+    
+    if not msf.nil? then
+      puts "#{$aa_ban["inf"]} METASPLOIT: OS: #{options[:os]}" if options[:verbose]
+      
+      ot = msf.exec("sessions -i #{sid}")
+      
+      putinf "METASPLOIT: #{ot}"
+      if ot.include? "Invalid" then
+        puterr "METASPLOIT: Session not found!"
+        return
+      end
+      
+      # hs = msf.exec( $aa_hostname[ options[:os] ] )
+      # ov = msf.exec( $aa_os_ver[ options[:os] ] )      
+      # ad = msf.exec( $aa_adapter[ options[:os] ] )
+      # rt = msf.exec( $aa_route[ options[:os] ] )            
+      # ns = msf.exec( $aa_netstat[ options[:os] ] )
+      # puts "#{$aa_ban["inf"]} netstat result:\n#{ns}" if options[:verbose]
+      
+      # prologue
+      
+      # master.name = hs
+      # master.info = ov
+      # master.deepinfo = ad + rt 
+      
+      # master.parse_netstat   ( ns )
+      
+      # epilogue
+      # msf.exec("exit")
+    end
+  end
+    
   desc "psexec {HOST}", "#{$aa_ban["exp"]} Execute commands via a 'psexec' connection the remote (Windows) host (requires metasploit)"
   method_option :user,        :type => :string,   :alias => "-l", :banner => "SMB_USERNAME", :require => true
-  method_option :pass,        :type => :string,   :alias => "-p", :banner => "SMB_PASSWORD"
+  method_option :pass,        :type => :string,   :alias => "-p", :banner => "SMB_PASSWORD", :desc => "SMB Password or a valid SAM hash (pass-the-hash)"
   method_option :domain,      :type => :string,   :default => "WORKGROUP", :alias => "-d", :banner => "SMB_DOMAIN"
   method_option :os,       :type => :string,  :default => "#{$aa_os[0]}", :required => true,
     :banner => "TARGET_OS",
@@ -219,7 +338,7 @@ Another cool tool is aaron_import.rb. copy it to metasploit as a pluin folder an
     :banner => "TARGET_OS",
     :desc => "Values: #{$aa_os}"
   def adb()
-    puts "#{$aa_ban["inf"]} adb" if options[:verbose]
+    puts "#{$aa_ban["inf"]} adb IS NOT IMPLEMENTED YET!" if options[:verbose]
   end
   
   desc "search", "Search something! (e.g. all windows clients connected to 192.168.0.1 on port 22)"
@@ -232,6 +351,8 @@ Another cool tool is aaron_import.rb. copy it to metasploit as a pluin folder an
   method_option :text,        :type => :string, :alias => "-t",   :banner => "TEXT",        :desc => "text filter"
   method_option :project,  :type => :string, :default => 'test.nmg', :alias => "-i", :required => true,
       :desc => "An existing #{$aa_ext}"
+  method_option :msf,         :type => :boolean, :default => false, :desc => "Add results to metasploit"
+  method_option :msf_workspace,         :type => :string, :default => "default", :desc => "Set metasploit workspace"
   def search
     @master.load_db(options[:project], true)
     
@@ -242,14 +363,18 @@ Another cool tool is aaron_import.rb. copy it to metasploit as a pluin folder an
                    options[:src],
                    options[:dst],
                    options[:text])
-                   
+     
+     feed_msf(options[:msf_workspace]) if options[:msf]
   end
   
   desc "show", "Print more info about a HOST (some of them are not shown in png or pdf)"
   method_option :info,        :type => :string, :alias => "-i", :banner => "HOST", :desc => "Show all information about a host"
+  method_option :port,        :type => :boolean, :banner => "HOST", :desc => "List open ports on a host"
   method_option :hosts,       :type => :boolean, :default => false, :alias => "-a", :desc => "Show all hosts"
   method_option :project,  :type => :string, :default => 'test.nmg', :alias => "-i", :required => true,
       :desc => "An existing #{$aa_ext}"
+  method_option :msf,         :type => :boolean, :default => false, :desc => "Add results to metasploit"
+  method_option :msf_workspace,         :type => :string, :default => "default", :desc => "Set metasploit workspace"
   def show
     @master.load_db(options[:project], true)
     
@@ -257,7 +382,11 @@ Another cool tool is aaron_import.rb. copy it to metasploit as a pluin folder an
       @master.print_hosts
     elsif not options[:info].nil? then
       @master.print_info options[:info]
+    elsif options[:port] then
+      @master.print_ports options[:port]
     end
+    
+    feed_msf(options[:msf_workspace]) if options[:msf]
   end
   
   desc "edit", "Edit a HOST"
@@ -267,15 +396,6 @@ Another cool tool is aaron_import.rb. copy it to metasploit as a pluin folder an
     @master.load_db(options[:project], true)
     
     @master.edit(host)
-  end
-  
-  desc "msf", "A clean output for metasploit (aaron_import plugin)"
-  method_option :project,  :type => :string, :default => 'test.nmg', :alias => "-i", :required => true,
-        :desc => "An existing #{$aa_ext}"
-  def msf
-    @master.load_db(options[:project], true)
-    
-    @master.msf
   end
 end
 
