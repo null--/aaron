@@ -491,53 +491,106 @@ Another cool tool is aaron_import.rb. copy it to metasploit as a pluin folder an
   end
 
 #-------------------------------------------------------------------------- #
-  desc "edit", "Edit a HOST"
-  method_option :project,  :type => :string, :default => 'test.axa', :alias => "-i", :required => true,
-        :desc => "An existing #{$aa_ext} file"
-        
-  ##
-  # Edit a host
-  def edit(host)
-    @master.load_db(options[:project], true)
-    
-    @master.edit(host)
-  end
-
-#-------------------------------------------------------------------------- #
-  desc "add", "Add a new host or connection"
-  method_option :host,       :type => :boolean, :default => false, :alias => "-h", :desc => "Add a new host"
-  method_option :conn,       :type => :boolean, :default => false, :alias => "-c", :desc => "Add a new connection"
+  desc "edithost {IP}", "Edit a host"
+  method_option :name,  :type => :string
+  method_option :info,  :type => :string
+  method_option :deepinfo,  :type => :string
+  method_option :comment,  :type => :string
   method_option :project,  :type => :string, :default => 'test.axa', :alias => "-i", :required => true,
         :desc => "An existing #{$aa_ext} file"
         
   ##
   # add
-  def add
-    puterr "NOT IMPLEMENTED YET"
-    return
-    
+  def edithost(ip)
     @master.load_db(options[:project], true)
     
-    if options[:host] then
-      @master.add_new_host
-    else
-      @master.add_new_connection
-    end
+    @master.edit_host(ip, options[:name], options[:info], options[:deepinfo], options[:comment])
+  end
+  
+#-------------------------------------------------------------------------- #
+  desc "addhost {IP}", "Add a new host"
+  method_option :name,  :type => :string
+  method_option :info,  :type => :string
+  method_option :deepinfo,  :type => :string
+  method_option :comment,  :type => :string
+  method_option :project,  :type => :string, :default => 'test.axa', :alias => "-i", :required => true,
+        :desc => "An existing #{$aa_ext} file"
+        
+  ##
+  # add
+  def addhost(ip)
+    @master.load_db(options[:project], true)
+    
+    @master.add_new_host(ip, options[:name], options[:info], options[:deepinfo], options[:comment])
   end
 
 #-------------------------------------------------------------------------- #
-  desc "rm", "Remove a host"
+  desc "addconn", "Add a new connection"
+  method_option :conn,       :type => :boolean, :default => false, :alias => "-c", :desc => "Add a new connection"
+  method_option :src_ip,  :type => :string, :required => true
+  method_option :dst_ip,  :type => :string, :required => true
+  method_option :src_port,  :type => :string, :required => true
+  method_option :dst_port,  :type => :string, :required => true
+  method_option :proto,  :type => :string
+  method_option :type,  :type => :string
+  method_option :comment,  :type => :string
+  method_option :project,  :type => :string, :default => 'test.axa', :alias => "-i", :required => true,
+        :desc => "An existing #{$aa_ext} file"
+        
+  ##
+  # add
+  def addconn
+    @master.load_db(options[:project], true)
+    
+    @master.add_new_connection(options[:src_ip], options[:src_port], options[:dst_ip], options[:dst_port], options[:proto], options[:type], options[:comment])
+  end
+
+#-------------------------------------------------------------------------- #
+  desc "editconn", "Edit a new connection"
+  method_option :conn,       :type => :boolean, :default => false, :alias => "-c", :desc => "Add a new connection"
+  method_option :src_ip,  :type => :string, :required => true
+  method_option :dst_ip,  :type => :string, :required => true
+  method_option :src_port,  :type => :string, :required => true
+  method_option :dst_port,  :type => :string, :required => true
+  method_option :proto,  :type => :string
+  method_option :type,  :type => :string
+  method_option :comment,  :type => :string
+  method_option :project,  :type => :string, :default => 'test.axa', :alias => "-i", :required => true,
+        :desc => "An existing #{$aa_ext} file"
+        
+  ##
+  # add
+  def editconn
+    @master.load_db(options[:project], true)
+    
+    @master.edit_connection(options[:src_ip], options[:src_port], options[:dst_ip], options[:dst_port], options[:proto], options[:type], options[:comment])
+  end
+  
+#-------------------------------------------------------------------------- #
+  desc "rmhost {IP}", "Remove a host"
   method_option :project,  :type => :string, :default => 'test.axa', :alias => "-i", :required => true,
         :desc => "An existing #{$aa_ext} file"        
   ##
   # 
-  def rm(host)
-    puterr "NOT IMPLEMENTED YET"
-    return
-    
+  def rmhost(host)
     @master.load_db(options[:project], true)
     
     @master.remove_host(host)
+  end
+#-------------------------------------------------------------------------- #
+  desc "rmconn", "Remove a connection"
+  method_option :src_ip,  :type => :string, :required => true
+  method_option :dst_ip,  :type => :string, :required => true
+  method_option :src_port,  :type => :string, :required => true
+  method_option :dst_port,  :type => :string, :required => true
+  method_option :project,  :type => :string, :default => 'test.axa', :alias => "-i", :required => true,
+        :desc => "An existing #{$aa_ext} file"        
+  ##
+  # 
+  def rmconn
+    @master.load_db(options[:project], true)
+    
+    @master.remove_connection(options[:src_ip], options[:src_port], options[:dst_ip], options[:dst_port])
   end
 end
 

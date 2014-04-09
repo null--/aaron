@@ -277,7 +277,7 @@ class MasterMind
     edges = Edge.find(:all)
     edges.each do |e|
       color = $clr_tcp
-      color = $clr_udp if e.proto.downcase == "udp"
+      color = $clr_udp if not e.proto.nil? and e.proto.downcase == "udp"
       
       src = e.src_ip.addr
       dst = e.dst_ip.addr
@@ -700,47 +700,15 @@ class MasterMind
   end
 
 #-------------------------------------------------------------------------- #  
-  def edit(host)
+  def edit_host(host, name , info, deepinfo, comment)
     ip = Ip.find(:first, :conditions => {:addr => host})
     puterr "edit: HOST NOT FOUND: #{host}" if ip.nil? or ip.host.nil?
     return if ip.nil? or ip.host.nil?
     
-    puts "Name:"
-    puts ip.host.name
-    puts "New Name:"
-    ip.host.name = STDIN.gets
-    
-    puts "Info:"
-    puts ip.host.info
-    puts "New Info:"
-    ip.host.info = STDIN.gets
-    
-    puts "Comment:"
-    puts ip.host.comment
-    puts "New Comment:"
-    ip.host.comment = STDIN.gets
-    
-    ip.host.save
-  end
-  
-#-------------------------------------------------------------------------- #
-  ##
-  # TODO
-  def add_new_host
-    ip = IP.new
-    ip.host = Host.new
-    
-    puts "New IP:"
-    ip.addr = STDIN.gets
-    
-    puts "New Name:"
-    ip.host.name = STDIN.gets
-    
-    puts "New Info:"
-    ip.host.info = STDIN.gets
-    
-    puts "New Comment:"
-    ip.host.comment = STDIN.gets  
+    ip.host.name = name unless name.nil?
+    ip.host.info = info unless info.nil?
+    ip.host.deepinfo = deepinfo unless deepinfo.nil?
+    ip.host.comment = comment unless comment.nil?
     
     ip.host.save
     ip.save
@@ -749,22 +717,82 @@ class MasterMind
 #-------------------------------------------------------------------------- #
   ##
   # TODO
-  def add_new_connection
-    e = Edge.new
+  def add_new_host(addr, name, info, deepinfo, comment)
+    ip = Ip.new
+    ip.host = Host.new
     
-    puts "Source IP:"
-    puts "Source Port:"
-    puts "Destination IP:"
-    puts "Destination Port:"
-    puts "Protocol:"
-    puts "Type (write LISTENING if source IP is a server):"
-    puts "Comment:"
+    ip.addr = addr
+    ip.host.name = name
+    ip.host.info = info
+    ip.host.deepinfo = deepinfo
+    ip.host.comment = comment
+    
+    ip.host.save
+    ip.save
   end
   
 #-------------------------------------------------------------------------- #
-  ##
-  # TODO
-  def remove_host(host)
+  def add_new_connection(src, sport, dst, dport, proto, type, comment)
+    e = Edge.new
+    e.src_ip = Ip.find(:first, :conditions => {:addr => src})
+    e.dst_ip = Ip.find(:first, :conditions => {:addr => dst})
+    
+    if e.src_ip.nil? then
+      puterr "Source IP not found: #{src}"
+      return
+    end
+    
+    if e.dst_ip.nil? then
+      puterr "Dst IP not found: #{dst}"
+      return
+    end
+    
+    e.src_tag = sport
+    e.dst_tag = dport
+    e.proto = proto
+    e.type_tag = type
+    e.comment = comment
+    
+    e.save
   end
 
+#-------------------------------------------------------------------------- #
+  def edit_connection(src, sport, dst, dport, proto, type, comment)
+    Edge.all.each do |e|
+      if e.src_ip.addr == src and e.dst_ip.addr == dst and e.src_tag == sport and e.dst_tag == dport then
+        
+        e.proto = proto unless proto.nil?
+        e.type_tag = type unless type.nil?
+        e.comment = comment unless comment.nil?
+        e.save
+        
+        return
+      end
+    end
+    
+    puterr "Connection not found"
+  end
+  
+#-------------------------------------------------------------------------- #
+  def remove_host(host)
+    id = Ip.find(:first, :conditions => {:addr => host})
+    if id.nil? then
+      puterr "Host not found: #{host}"
+      return
+    end
+    
+    Ip.destroy(id.id)
+  end
+
+#-------------------------------------------------------------------------- #
+  def remove_connection(src, sport, dst, dport)
+    Edge.all.each do |e|
+      if e.src_ip.addr == src and e.dst_ip.addr == dst and e.src_tag == sport and e.dst_tag == dport then
+        Edge.destroy(e.id)
+        return
+      end
+    end
+    
+    puterr "Connection not found"
+  end
 end
