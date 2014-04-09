@@ -179,7 +179,32 @@ class Aaron < Thor
   ##
   # customized help task for +aaron+
   def help(command = nil)
+    if command.nil? then
+      puts "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
+      puts "Brief Help"
+      puts "=========="
+    end
     super(command)
+    
+    if command.nil? then
+      puts "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
+      puts "Advanced Help"
+      puts "========="
+      super("adb")
+      super("addconn")
+      super("addhost")
+      super("editconn")
+      super("edithost")
+      super("file")
+      super("help")
+      super("psexec")
+      super("redraw")
+      super("rmconn")
+      super("rmhost")
+      super("search")
+      super("ssh")
+      super("stdin")
+    end
     
     if command.nil? then
       puts <<-BANNER
@@ -209,9 +234,8 @@ Examples:
     
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 Does PNG output SUCK? Do you love that old school black and white shell?
-Try "#{$aaron_name} help search" and find out how to analyse the output "in depth"!
+Try "#{$aaron_name} help search" to find out how to analyse the output "in depth"!
 
-Another cool tool is aaron_import.rb. copy it to metasploit as a pluin folder and enjoy it!
       BANNER
     end
   end
