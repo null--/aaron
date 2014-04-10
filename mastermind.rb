@@ -297,8 +297,8 @@ class MasterMind
       #c = @graph.add_edges(src, dst, "headlabel" => dp, "taillabel" => sp, "labeldistance" => "2", "color" => color)
       ts = rand_str
       td = rand_str
-      @graph.add_nodes(ts, "label" => sp, "shape" => $aa_tag_shape, "style" => "filled", "color" => $clr_tag)
-      @graph.add_nodes(td, "label" => dp, "shape" => $aa_tag_shape, "style" => "filled", "color" => $clr_tag)
+      @graph.add_nodes(ts, "label" => sp, "shape" => $aa_stag_shape, "style" => "filled", "color" => $clr_tag)
+      @graph.add_nodes(td, "label" => dp, "shape" => $aa_dtag_shape, "style" => "filled", "color" => $clr_tag)
       
       @graph.add_edges(src, ts, "color" => color)
       @graph.add_edges(ts, td, "color" => color)
@@ -330,6 +330,18 @@ class MasterMind
     # puterr "save_pdf failed! #{details}"
   end
 
+#-------------------------------------------------------------------------- #
+  ##
+  # yield(cn)
+  def netstat_regex_loop(data, rex)
+    rex_pos = 0
+    while (cn = data.match(rex, rex_pos)) do
+      rex_pos = cn.end(0)
+      
+      yield(cn)
+    end
+  end
+
 #-------------------------------------------------------------------------- #  
   def detect_os_based_on_os_version(data)
     @os = "auto"
@@ -344,7 +356,8 @@ class MasterMind
     
     puts "OS Detected: #{@os}"
   end
-  
+
+#-------------------------------------------------------------------------- #  
   def detect_os_based_on_netstat(data)
     max_os = "linux"
     max_mc = 0
@@ -352,14 +365,12 @@ class MasterMind
     $aa_netstat_regex.each do |os, rex|
       mc = 0
       
-      data.lines.each do |ln|
-        cn = rex.match(ln)
-        
-        if not cn.nil? then
-          mc = mc + 1
-        end
+      netstat_regex_loop(data, rex) do |cn|       
+        mc = mc + 1
+        # puts cn
       end
       
+      # putinf "OS: #{os} Matches: #{mc}"
       if mc > max_mc then
         max_mc = mc
         max_os = os
@@ -393,6 +404,7 @@ class MasterMind
 
 #-------------------------------------------------------------------------- #  
   def parse_netstat(data)
+    putinf "Parsing netstat..."
     detect_os_based_on_netstat data if @os == "auto"
     
     rex = $aa_netstat_regex[@os]
@@ -407,23 +419,21 @@ class MasterMind
     hostips << "127.0.0.1" if @loopback
     
     i = 0
-    data.lines.each do |ln|
-      cn = rex.match(ln)
+    netstat_regex_loop(data, rex) do |cn|
+    
+      next if cn.names.include? "type" and not @dead and not (cn[:type].upcase.include? "ESTAB" or cn[:type].upcase.include? "LIST")
       
-      if not cn.nil? then
-        next if cn.names.include? "type" and not @dead and not (cn[:type].upcase.include? "ESTAB" or cn[:type].upcase.include? "LIST")
-        
-        print cn[:proto] + " # " if @verbose and cn.names.include?("proto")
-        print cn[:src] + " : " + cn[:sport] + " <--> " + 
-              cn[:dst] + " : " + cn[:dport] + 
-              " (" + cn[:type] + ")" + "\n" if @verbose
-              
-        conns << cn
-        
-        if not cn[:src].include? "127.0.0.1" and not hostips.include? cn[:src] then
-           hostips << cn[:src]
-        end
+      print cn[:proto] + " # " if @verbose and cn.names.include?("proto")
+      print cn[:src] + " : " + cn[:sport] + " <--> " + 
+            cn[:dst] + " : " + cn[:dport] + 
+            " (" + cn[:type] + ")" + "\n" if @verbose
+            
+      conns << cn
+      
+      if not cn[:src].include? "127.0.0.1" and not hostips.include? cn[:src] then
+         hostips << cn[:src]
       end
+
     end
     
     return if hostips.empty? or conns.empty?

@@ -50,19 +50,20 @@ $aa_ext         = ".axa"
 ##
 # graphviz settings
 
-$axa_format     = "dot" # $axa_format     = "canon"
+$axa_format     = "dot" #$axa_format     = "canon"
 $deep_tag       = "comment"
-$aa_node_shape  = "ellipse"
-$aa_tag_shape   = "rectangle"
-$aa_graph_layout= "circo"
+$aa_node_shape  = "component"
+$aa_stag_shape  = "octagon" #"ellipse"
+$aa_dtag_shape  = "doubleoctagon"
+$aa_graph_layout= "dot"
 $clr_node_seen  = "#99EECC"
 $clr_node_unseen= "#9999CC"
 $clr_tag        = "#EECC22"
 $clr_bg         = "white"
 $clr_node       = "gray"
 $clr_graph      = "black"
-$clr_tcp        = "purple"
-$clr_udp        = "brown"
+$clr_tcp        = "#001155"
+$clr_udp        = "#005511"
 $clr_ssh        = "red"
 
 #-------------------------------------------------------------------------- #
@@ -84,6 +85,7 @@ $aa_os = [
   "linux",
   "bsd",
   "solaris",
+  "solaris2",
   "win"
 ]
 
@@ -94,6 +96,7 @@ $aa_os_ver = {
   "linux"    => "uname -rs",
   "bsd"      => "uname -rs",
   "solaris"  => "uname -rs",
+  "solaris2" => "uname -rs",
   "win"      => "ver"
 }
 
@@ -104,6 +107,7 @@ $aa_adapter = {
   "linux"    => "ifconfig",
   "bsd"      => "ifconfig",
   "solaris"  => "ifconfig -a",
+  "solaris2" => "ifconfig -a",
   "win"      => "ipconfig"
 }
 
@@ -114,6 +118,7 @@ $aa_hostname = {
   "linux"    => "hostname",
   "bsd"      => "hostname",
   "solaris"  => "hostname",
+  "solaris2" => "hostname",
   "win"      => "hostname"
 }
 
@@ -124,6 +129,7 @@ $aa_route = {
   "linux"    => "netstat -r",
   "bsd"      => "netstat -r",
   "solaris"  => "netstat -r",
+  "solaris2" => "netstat -r",
   "win"      => "netstat -r"
 }
 
@@ -134,6 +140,7 @@ $aa_netstat = {
   "linux"    => "netstat -antu",
   "bsd"      => "netstat -an",
   "solaris"  => "netstat -an",
+  "solaris2" => "netstat -anv",
   "win"      => "netstat -an"
 }
 
@@ -142,10 +149,11 @@ $aa_netstat = {
 # netstat regex
 # TODO: IPv6 support
 $aa_netstat_regex = {
-  "linux"    => /(?<proto>(tcp|udp))\s*\d+\s*\d+\s*(?<src>(\d+\.\d+\.\d+\.\d+))\:(?<sport>[1-9]\d*)\s*(?<dst>(\d+\.\d+\.\d+\.\d+))\:(?<dport>[1-9]\d*)\s*(?<type>ESTABLISHED|LISTEN|\S+)/im,
-  "bsd"      => /(?<proto>(tcp4|udp4))\s*\d+\s*\d+\s*(?<src>(\d+\.\d+\.\d+\.\d+))\.(?<sport>[1-9]\d*)\s*(?<dst>(\d+\.\d+\.\d+\.\d+))\.(?<dport>[1-9]\d*)\s*(?<type>ESTABLISHED|LISTEN|\S+)/im,
-  "solaris"  => /(?<src>(\d+\.\d+\.\d+\.\d+))\.(?<sport>[1-9]\d*)\s*(?<dst>(\d+\.\d+\.\d+\.\d+))\.(?<dport>[1-9]\d*)\s*\d+\s*\d+\s*\d+\s*\d+\s*(?<type>ESTABLISHED|LISTEN|\S+)/im,
-  "win"      => /(?<proto>(tcp|udp))\s*(?<src>(\d+\.\d+\.\d+\.\d+))\:(?<sport>[1-9]\d*)\s*(?<dst>(\d+\.\d+\.\d+\.\d+))\:(?<dport>[1-9]\d*)\s*(?<type>ESTABLISHED|LISTENING|\S+)/im,
+  "linux"    => /(?<proto>(tcp|udp))\s+\d+\s+\d+\s+(?<src>(\d+\.\d+\.\d+\.\d+))\:(?<sport>[1-9]\d*)\s+(?<dst>(\d+\.\d+\.\d+\.\d+))\:(?<dport>[1-9]\d*)\s+(?<type>ESTABLISHED|LISTEN|\S+)/i,
+  "bsd"      => /(?<proto>(tcp4|udp4))\s*\d+\s*\d+\s*(?<src>(\d+\.\d+\.\d+\.\d+))\.(?<sport>[1-9]\d*)\s+(?<dst>(\d+\.\d+\.\d+\.\d+))\.(?<dport>[1-9]\d*)\s+(?<type>ESTABLISHED|LISTEN|\S+)/i,
+  "solaris"  => /(?<src>(\d+\.\d+\.\d+\.\d+))\.(?<sport>[1-9]\d*)\s+(?<dst>(\d+\.\d+\.\d+\.\d+))\.(?<dport>[1-9]\d*)\s+\d+\s+\d+\s+\d+\s+\d+\s+(?<type>ESTABLISHED|LISTEN|\w+)/i,
+  "solaris2" => /(?<src>(\d+\.\d+\.\d+\.\d+))\.(?<sport>[1-9]\d*)\s+\W+(?<dst>(\d+\.\d+\.\d+\.\d+))\.(?<dport>[1-9]\d*)\s+\w+\s+\w+\s*\w+\s+\w+\s+\w+\s+\w+\s+\w+\s+\w+\s+(?<type>ESTABLISHED|LISTEN|\S+)/im,
+  "win"      => /(?<proto>(tcp|udp))\s+(?<src>(\d+\.\d+\.\d+\.\d+))\:(?<sport>[1-9]\d*)\s+(?<dst>(\d+\.\d+\.\d+\.\d+))\:(?<dport>[1-9]\d*)\s+(?<type>ESTABLISHED|LISTENING|\S+)/i,
 }
 
 #-------------------------------------------------------------------------- #

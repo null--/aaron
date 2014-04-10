@@ -181,20 +181,35 @@ class Aaron < Thor
       puts "Advanced Help"
       puts "========="
       super("adb")
+      puts "-----------------------------------------------------"
       super("addconn")
+      puts "-----------------------------------------------------"
       super("addhost")
+      puts "-----------------------------------------------------"
       super("editconn")
+      puts "-----------------------------------------------------"
       super("edithost")
+      puts "-----------------------------------------------------"
       super("file")
+      puts "-----------------------------------------------------"
       super("help")
+      puts "-----------------------------------------------------"
       super("psexec")
+      puts "-----------------------------------------------------"
       super("redraw")
+      puts "-----------------------------------------------------"
       super("rmconn")
+      puts "-----------------------------------------------------"
       super("rmhost")
+      puts "-----------------------------------------------------"
       super("search")
+      puts "-----------------------------------------------------"
       super("show")
+      puts "-----------------------------------------------------"
       super("ssh")
+      puts "-----------------------------------------------------"
       super("stdin")
+      puts "-----------------------------------------------------"
     end
     
     if command.nil? then
@@ -224,7 +239,7 @@ Examples:
     ./aaron.rb show --port 192.168.0.1
     
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-Does PNG output SUCK? Do you love that old school black and white shell?
+Does PDF output suck? Does GUI make you sick?! Do you love that old school black and white shell?
 Try "#{$aaron_name} help search" to find out how to analyse the output "in depth"!
 
       BANNER
@@ -250,7 +265,7 @@ Try "#{$aaron_name} help search" to find out how to analyse the output "in depth
       :desc => "Save graph in pdf format, too"
 
 #-------------------------------------------------------------------------- #  
-  desc "stdin", "Pipe netstat result into aaron"
+  desc "stdin", "Pipe netstat result into aaron\nSupported netstat:\n#{$aa_netstat}"
   method_option :os,       :type => :string,  :default => "#{$aa_os[0]}", :required => true,
     :banner => "TARGET_OS",
     :desc => "Values: #{$aa_os}"
@@ -269,7 +284,7 @@ Try "#{$aaron_name} help search" to find out how to analyse the output "in depth
   end
 
 #-------------------------------------------------------------------------- #
-  desc "file {NETSTAT-OUTPUT}", "Create a new diagram from a netstat file (netstat -blah > NETSTAT-OUTPUT)"
+  desc "file {NETSTAT-OUTPUT}", "Create a new diagram from a netstat file\nSupported netstat:\n#{$aa_netstat}"
   method_option :os,       :type => :string,  :default => "#{$aa_os[0]}", :required => true,
     :banner => "TARGET_OS",
     :desc => "Values: #{$aa_os}"

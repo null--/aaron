@@ -4,6 +4,8 @@
 *.axa
 *.ns
 bup/*
+nsrepo/*
+doc/*
 
 # EDITOR
 ######################
