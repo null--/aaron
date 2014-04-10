@@ -6,21 +6,30 @@ Find a way to go deep inside your target network to get the "Arkenstone".
 Designed for hacktists, professional penetration testers and APT teams.
 
 #About
-  Imagine those hard times that you were inside an unknown network trying to discover how things work by looking at anything, 
-  just to find out a way to go deeper and deeper inside that jungle of connected electronic devices.  Going deeper means you need
-  to find new targets, but how? Yes! That cool netstat -an command, shows valuable network information.
-  But, did you ever try to analyze 10000 lines of netstat result? THAT'S HELL OF A HARD WORK! so you may use grep, awk, cut, sort, uniq and a bunch of | (pipes)
-  trying to make one those magical single line commands and reduce the netstat result to 1000 lines! That's geek but you need something more visual!
+  Imagine those hard times that you were inside an unknown network 
+  trying to discover how things work by looking at anything, 
+  just to find out a way to go deeper and deeper inside that jungle of 
+  connected electronic devices.  Going deeper means you need
+  to find new targets, but how? Yes! That cool netstat -an command, 
+  shows valuable network information. But, did you ever try to 
+  analyze 10000 lines of netstat result? THAT'S HELL OF A HARD WORK! 
+  so you may use grep, awk, cut, sort, uniq and a bunch of | (pipes)
+  trying to make one those magical single line commands and reduce 
+  the netstat result to 1000 lines! That's geek but you need s
+  omething more visual!
 
-  Any advanced hacking or black-box penetration testing project starts with a short list of known targets. After exploiting
-  one of those known targets, you should use all the information found inside that target to find new targets.
-  Discovering new HVTs is a key point for a successful security breach because you can go deeper and deeper.
+  Any advanced hacking or black-box penetration testing project starts
+  with a short list of known targets. After exploiting one of those known
+  targets, you should use all the information found inside that target 
+  to find new targets. Discovering new HVTs is a key point for 
+  a successful security breach because you can go deeper and deeper.
 
   aaron helps you do that in a more visual way!
 
 #Why?
   - You can understand data-flow inside your target network.
-  - You don't need to install it on remote target (e.g. libpcap) => less suspicious.
+  - You don't need to install it on remote target (e.g. libpcap)
+      => less suspicious.
   - Find high value targets by looking at a graphical map!
 
 #Features
@@ -31,7 +40,8 @@ Designed for hacktists, professional penetration testers and APT teams.
     
   # Graph
     - Draw network graph of your local machine
-    - Draw a network graph based on results collected from several remote hosts
+    - Draw a network graph based on results collected 
+        from several remote hosts
     - Update an existing network graph
     - Export graphs in png and pdf formats
   
@@ -55,14 +65,18 @@ Designed for hacktists, professional penetration testers and APT teams.
     2. android tools: adb
     
   Install on a Debian or kali Linux:
-    sudo aptitude install ruby-thor ruby-net ruby-net-ssh ruby-graphviz libsqlite3-ruby ruby-activerecord
-    sudo aptitude install ruby-highline ruby-termios android-tools-adb
+    $ sudo aptitude install ruby-thor ruby-net-ssh ruby-highline
+    $ sudo aptitude install ruby-graphviz libsqlite3-ruby ruby-termios 
+    $ sudo aptitude install ruby-activerecord android-tools-adb
     
-    Note: Make sure metasploit is installed and msfdb (postgresql on port 5432 and 5433) is up
+    Note: Make sure metasploit is installed and msfdb 
+    (postgresql on port 5432 and 5433) is up
   
-  I think there shouldn't be any difficulties installing aaron on other GNU/Linux, 
-  BSD or other Unix families, However there are some issues (like adb, psexec, etc.) installing aaron on a 
-  windows machine but fixing those issues wouldn't be a headache for a professional user.
+  I think there shouldn't be any difficulties installing aaron on 
+  other GNU/Linux, BSD or other Unix families, However there are
+  some issues (like adb, psexec, etc.) installing aaron on a 
+  windows machine but fixing those issues wouldn't be a 
+  headache for a professional user.
 
 #TODO
   - aaron search + regex
