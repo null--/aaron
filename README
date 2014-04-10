@@ -40,8 +40,6 @@ Designed for hacktists, professional penetration testers and APT teams.
     - Supports "adb shell" (android devices)  
 
 #TODO
-  - fix fuckedupography in graphviz output!
-  - png examples folder
   - aaron search + regex
   - IPv6 netstat regex
   - BSD test

@@ -217,8 +217,9 @@ class MasterMind
     @graph.node["color"]  = $clr_node
     @graph["color"]       = $clr_graph
     @graph["layout"]      = $aa_graph_layout
-    @graph["ranksep"]     = "3.0"
-    @graph["ratio"]       = "auto"
+    @graph["ranksep"]     = "2.0"
+    @graph["overlap"]     = "false"
+    #@graph["ratio"]       = "auto"
     
     if @graph.nil? then
       puterr "Failed to create graph"
@@ -258,9 +259,9 @@ class MasterMind
       hosts_lbl << mn
       
       if not mos.nil? then
-        c = @graph.add_nodes(mn, "shape" => $aa_node_shape, "style" => "filled", "color" => $clr_cnode, :image => $aa_img_dir + mos + ".png")
+        c = @graph.add_nodes(mn, "shape" => $aa_node_shape, "style" => "filled", "color" => $clr_node_seen, :image => $aa_img_dir + mos + ".png")
       else
-        c = @graph.add_nodes(mn, "shape" => $aa_node_shape, "style" => "filled", "color" => $clr_cnode)
+        c = @graph.add_nodes(mn, "shape" => $aa_node_shape, "style" => "filled", "color" => $clr_node_seen)
       end
     end
     
@@ -270,7 +271,7 @@ class MasterMind
       next unless ip.host.nil?
       mn  = ip.addr
       
-      c = @graph.add_nodes(ip.addr, "label" => mn, "shape" => $aa_node_shape, "style" => "filled", "color" => $clr_cnode)
+      c = @graph.add_nodes(ip.addr, "label" => mn, "shape" => $aa_node_shape, "style" => "filled", "color" => $clr_node_unseen)
     end
     
     # add edges
@@ -293,7 +294,15 @@ class MasterMind
       sp = e.src_tag
       sp = sp + "\n" + $aa_known_ports[sp] unless $aa_known_ports[sp].nil?
       
-      c = @graph.add_edges(src, dst, "headlabel" => dp, "taillabel" => sp, "labeldistance" => "2", "color" => color)
+      #c = @graph.add_edges(src, dst, "headlabel" => dp, "taillabel" => sp, "labeldistance" => "2", "color" => color)
+      ts = rand_str
+      td = rand_str
+      @graph.add_nodes(ts, "label" => sp, "shape" => $aa_tag_shape, "style" => "filled", "color" => $clr_tag)
+      @graph.add_nodes(td, "label" => dp, "shape" => $aa_tag_shape, "style" => "filled", "color" => $clr_tag)
+      
+      @graph.add_edges(src, ts, "color" => color)
+      @graph.add_edges(ts, td, "color" => color)
+      @graph.add_edges(td, dst, "color" => color)
     end
   end
 
@@ -394,7 +403,9 @@ class MasterMind
     
     conns = Array.new
     hostips = Array.new
+    
     hostips << "127.0.0.1" if @loopback
+    
     i = 0
     data.lines.each do |ln|
       cn = rex.match(ln)

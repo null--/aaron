@@ -18,7 +18,7 @@
 #-------------------------------------------------------------------------- #
 ##
 # aaron current version
-$aa_version = "1.1-testing"
+$aa_version = "1.1.2-testing"
 
 $aaron_name = "#aaron"
 # $aaronizer_name = "#aaronizer"
@@ -52,10 +52,12 @@ $aa_ext         = ".axa"
 
 $axa_format     = "dot" # $axa_format     = "canon"
 $deep_tag       = "comment"
-$aa_node_shape  = "folder"
+$aa_node_shape  = "ellipse"
+$aa_tag_shape   = "rectangle"
 $aa_graph_layout= "circo"
-$clr_pnode      = "#99EECC"
-$clr_cnode      = "#99EECC"
+$clr_node_seen  = "#99EECC"
+$clr_node_unseen= "#9999CC"
+$clr_tag        = "#EECC22"
 $clr_bg         = "white"
 $clr_node       = "gray"
 $clr_graph      = "black"
