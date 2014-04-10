@@ -19,16 +19,6 @@
 
 # * aaron Project
 
-##
-# Tested on Kali - 2014
-
-##
-# +INSTALLATION+ (Debian or kali):
-#  sudo aptitude install ruby-thor ruby-net ruby-net-ssh ruby-graphviz libsqlite3-ruby ruby-activerecord
-#  sudo aptitude install ruby-highline ruby-termios android-tools-adb
-#  
-#  Make sure metasploit is installed and msfdb (postgresql on port 5432 and 5433) is configured
-  
 require 'thor'
 require 'net/ssh'
 require 'open3'

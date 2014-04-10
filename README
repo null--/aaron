@@ -27,6 +27,7 @@ Designed for hacktists, professional penetration testers and APT teams.
   # Core
     - Search!
     - Automated OS detection (based on netstat results)
+    - rdoc
     
   # Graph
     - Draw network graph of your local machine
@@ -38,6 +39,30 @@ Designed for hacktists, professional penetration testers and APT teams.
     - Add hosts to metasploit database
     - Supports SSH ans PSExec (SMB) protocols
     - Supports "adb shell" (android devices)  
+
+#Installation:
+  Ruby dependencies:
+    1. thor
+    2. net-ssh
+    3. graphviz
+    4. sqlite3
+    5. activerecord
+    6. highline
+    7. termios
+    
+  General dependencies:
+    1. metasploit: msfconsole
+    2. android tools: adb
+    
+  Install on a Debian or kali Linux:
+    sudo aptitude install ruby-thor ruby-net ruby-net-ssh ruby-graphviz libsqlite3-ruby ruby-activerecord
+    sudo aptitude install ruby-highline ruby-termios android-tools-adb
+    
+    Note: Make sure metasploit is installed and msfdb (postgresql on port 5432 and 5433) is up
+  
+  I think there shouldn't be any difficulties installing aaron on other GNU/Linux, 
+  BSD or other Unix families, However there are some issues (like adb, psexec, etc.) installing aaron on a 
+  windows machine but fixing those issues wouldn't be a headache for a professional user.
 
 #TODO
   - aaron search + regex
