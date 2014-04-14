@@ -228,11 +228,111 @@ class MasterMind
   end
 
 #-------------------------------------------------------------------------- #
+def add_host_to_graph(mn, mos)
+  if not mos.nil? then
+    c = @graph.add_nodes(mn, "shape" => $aa_node_shape, "style" => "filled", "color" => $clr_node_seen, :image => $aa_img_dir + mos + ".png")
+  else
+    c = @graph.add_nodes(mn, "shape" => $aa_node_shape, "style" => "filled", "color" => $clr_node_seen)
+  end
+end
+
+#-------------------------------------------------------------------------- #
+def add_ip_to_graph(addr)
+  putinf "adding ip: #{addr}"
+  c = @graph.add_nodes(addr, "label" => addr, "shape" => $aa_node_shape, "style" => "filled", "color" => $clr_node_unseen)
+end
+
+#-------------------------------------------------------------------------- #
+def add_connection_to_graph(src, dst, sp, dp, color)
+  # puts src + dst + sp + dp + color
+
+  # Edge: Method 1
+  # c = @graph.add_edges(src, dst, "headlabel" => dp, "taillabel" => sp, "labeldistance" => "2", "color" => color)
+      
+  # Edge: Method 2
+  c = @graph.add_edges(src, dst, "label" => "src:" + sp + " dst: " + dp, "labeldistance" => "2", "color" => color)
+      
+  # Edge: Method 3
+  # ts = rand_str
+  # td = rand_str
+  # @graph.add_nodes(ts, "label" => sp, "shape" => $aa_stag_shape, "style" => "filled", "color" => $clr_tag)
+  # @graph.add_nodes(td, "label" => dp, "shape" => $aa_dtag_shape, "style" => "filled", "color" => $clr_tag)
+  # @graph.add_edges(src, ts, "color" => color)
+  # @graph.add_edges(ts, td, "color" => color)
+  # @graph.add_edges(td, dst, "color" => color)
+
+  # Edge: Method 4
+  # ts = rand_str
+  # @graph.add_nodes(ts, "label" => sp, "shape" => $aa_stag_shape, "style" => "filled", "color" => $clr_tag)
+  # @graph.add_edges(src, ts, "color" => color)
+  # @graph.add_edges(ts, dst, "label" => dp, "color" => color)
+end
+
+#-------------------------------------------------------------------------- #
+  ##
+  # draw_host
+  def draw_host(host_id)
+    new_graph
+
+    h = Host.find(:first, :conditions => {:id => host_id})
+
+    host_lbl = ""
+    host_lbl = h.name unless h.name.nil?
+    if not h.ips.nil? then
+      h.ips.each do |hip|
+        host_lbl = host_lbl + "\n" + hip.addr
+      end
+    end
+
+    putinf "Draw Host: #{host_lbl}"
+    
+    add_host_to_graph(host_lbl, h.find_os)
+    
+    edg = Array.new
+    h.ips.each do |i|
+      i.start_edges.each do |e|
+        edg << e
+      end
+      i.start_edges.each do |e|
+        edg << e
+      end
+    end
+    
+    edg.each do |e|
+      src = nil
+      dst = nil
+      once = false
+    
+      unless host_lbl.include? e.src_ip.addr
+        add_ip_to_graph(e.src_ip.addr)
+        src = e.src_ip.addr
+      else
+        once = true
+        src = host_lbl
+      end
+                    
+      unless host_lbl.include? e.dst_ip.addr
+        add_ip_to_graph(e.dst_ip.addr)
+        dst = e.dst_ip.addr
+      else
+        once = true
+        dst = host_lbl
+      end
+      
+      next if not once or dst.nil? or src.nil?
+      color = $clr_tcp
+      color = $clr_udp if not e.proto.nil? and e.proto.downcase == "udp"
+      
+      add_connection_to_graph(src, dst, e.src_tag, e.dst_tag, color)
+    end
+  end
+
+#-------------------------------------------------------------------------- #
   ##
   # draw_graph
   def draw_graph
     new_graph
-    
+   
     putinf "Drawing graph..."
     return if @graph.nil?
     
@@ -248,7 +348,6 @@ class MasterMind
     hosts.each do |h|
       mn  = ""
       mn = mn + h.name unless h.name.nil?
-      mos = h.find_os
       
       unless h.ips.nil? then
         h.ips.each do |hip|
@@ -257,12 +356,8 @@ class MasterMind
       end
       
       hosts_lbl << mn
-      
-      if not mos.nil? then
-        c = @graph.add_nodes(mn, "shape" => $aa_node_shape, "style" => "filled", "color" => $clr_node_seen, :image => $aa_img_dir + mos + ".png")
-      else
-        c = @graph.add_nodes(mn, "shape" => $aa_node_shape, "style" => "filled", "color" => $clr_node_seen)
-      end
+      puts mn
+      add_host_to_graph(mn, h.find_os)
     end
     
     # add ips
@@ -271,12 +366,14 @@ class MasterMind
       next unless ip.host.nil?
       mn  = ip.addr
       
-      c = @graph.add_nodes(ip.addr, "label" => mn, "shape" => $aa_node_shape, "style" => "filled", "color" => $clr_node_unseen)
+      add_ip_to_graph(mn)
     end
     
     # add edges
-    edges = Edge.find(:all)
+    edges = Edge.all
     edges.each do |e|
+      next if e.src_ip.nil? or e.dst_ip.nil?
+
       color = $clr_tcp
       color = $clr_udp if not e.proto.nil? and e.proto.downcase == "udp"
       
@@ -294,43 +391,49 @@ class MasterMind
       sp = e.src_tag
       sp = sp + " " + $aa_known_ports[sp] unless $aa_known_ports[sp].nil?
       
-      # Edge: Method 1
-      # c = @graph.add_edges(src, dst, "headlabel" => dp, "taillabel" => sp, "labeldistance" => "2", "color" => color)
-      
-      # Edge: Method 2
-      # c = @graph.add_edges(src, dst, "label" => "src:" + sp + " dst: " + dp, "labeldistance" => "2", "color" => color)
-      
-      # Edge: Method 3
-      ts = rand_str
-      td = rand_str
-      @graph.add_nodes(ts, "label" => sp, "shape" => $aa_stag_shape, "style" => "filled", "color" => $clr_tag)
-      @graph.add_nodes(td, "label" => dp, "shape" => $aa_dtag_shape, "style" => "filled", "color" => $clr_tag)
-      @graph.add_edges(src, ts, "color" => color)
-      @graph.add_edges(ts, td, "color" => color)
-      @graph.add_edges(td, dst, "color" => color)
+      add_connection_to_graph(src, dst, sp, dp, color)
     end
   end
 
 #-------------------------------------------------------------------------- #
-  def save_png(path)
-    draw_graph if @graph.nil?
-    @graph.output( :png => "#{path}.png" )
+  def save_png(path, host_id=nil)
+    # draw_graph if @graph.nil?
+    # @graph.output( :png => "#{path}.png" )
+    if host_id.nil?
+      draw_graph # if @graph.nil?
+      @graph.output( :png => "#{path}.png" )
+    else
+      draw_host(host_id) # if @graph.nil?
+      @graph.output( :png => "#{path}.#{host_id}.png" )
+    end
   # rescue => details
     # puterr "save_png failed! #{details}"
   end
 
 #-------------------------------------------------------------------------- #
-  def save_pdf(path)
-    draw_graph if @graph.nil?
-    @graph.output( :pdf => "#{path}.pdf" )
+  def save_pdf(path, host_id=nil)
+    # draw_graph if @graph.nil?
+    # @graph.output( :pdf => "#{path}.pdf" )
+    if host_id.nil?
+      draw_graph # if @graph.nil?
+      @graph.output( :pdf => "#{path}.pdf" )
+    else
+      draw_host(host_id) # if @graph.nil?
+      @graph.output( :pdf => "#{path}.#{host_id}.pdf" )
+    end
   # rescue => details
     # puterr "save_pdf failed! #{details}"
   end
 
 #-------------------------------------------------------------------------- #  
-  def save_graph(path)
-    draw_graph if @graph.nil?
-    @graph.output( $axa_format => "#{path}.#{$axa_format}" )
+  def save_graph(path, host_id = nil)
+    if host_id.nil?
+      draw_graph # if @graph.nil?
+      @graph.output( $aa_format => "#{path}.#{$aa_format}" )
+    else
+      draw_host(host_id) # if @graph.nil?
+      @graph.output( $aa_format => "#{path}.#{host_id}.#{$aa_format}" )
+    end
   # rescue => details
     # puterr "save_pdf failed! #{details}"
   end

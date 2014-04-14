@@ -118,8 +118,8 @@ class Aaron < Thor
 
 #-------------------------------------------------------------------------- #
     def epilogue
-      master.save_png(options[:project])  if options[:png]
-      master.save_pdf(options[:project])  if options[:pdf]
+      @master.save_png(options[:project])  if options[:png]
+      @master.save_pdf(options[:project])  if options[:pdf]
       
       puts "#{$lastnfo}"
     end
@@ -239,6 +239,7 @@ Examples:
     ./aaron.rb show --port 192.168.0.1
     
 -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+Is network graph too large? Try "#{$aaron_name} redraw --perhost"
 Does PDF output suck? Does GUI make you sick?! Do you love that old school black and white shell?
 Try "#{$aaron_name} help search" to find out how to analyse the output "in depth"!
 
@@ -288,7 +289,7 @@ Try "#{$aaron_name} help search" to find out how to analyse the output "in depth
   method_option :os,       :type => :string,  :default => "#{$aa_os[0]}", :required => true,
     :banner => "TARGET_OS",
     :desc => "Values: #{$aa_os}"
-  method_option :files,    :type => :array, :required => false, :banner => "multiple input files"
+  method_option :files,    :type => :array, :required => false, :banner => "Multiple input files (supports regex)"
 
   ##
   # reads input from file
@@ -297,11 +298,16 @@ Try "#{$aaron_name} help search" to find out how to analyse the output "in depth
     
     if not nsfile.nil? then
       puts "files: nsfiles=#{nsfile}" if options[:verbose]
+      
       master.parse_netstat(File.read(nsfile))
     elsif not options[:files].nil? then
-      puts "files: files=#{files}" if options[:verbose]
-      options[:files].each do |f|
-        master.parse_netstat(File.read(f))
+      puts "files: files=#{options[:files]}" if options[:verbose]
+      
+      options[:files].each do |fr|
+        Dir[fr].select do |f|
+          putinf "Processing: #{f}"
+          master.parse_netstat(File.read(f))
+        end
       end
     else
       help("file")
@@ -312,15 +318,27 @@ Try "#{$aaron_name} help search" to find out how to analyse the output "in depth
 
 #-------------------------------------------------------------------------- #
   desc "redraw", "Redraw an existing diagram (set at least one of --pdf or --png optoins)"
-  
+  method_option :perhost, :type => :boolean, :default => false, :desc => "Draw a seperate network graph for each host"
   ##
   # redraws an exsisting project
   def redraw
     puts "redraw: #{options[:project]}" if options[:verbose]
     
     prologue
-    @master.save_graph options[:project]
-    epilogue
+    if not options[:perhost] then
+      @master.save_graph(options[:project])
+      epilogue
+    else
+      Host.all.each do |h|
+        putinf "Drawing #{h.id} - #{h.name}..."
+
+        @master.save_graph(options[:project], h.id)
+
+        @master.save_png(options[:project], h.id)  if options[:png]
+        @master.save_pdf(options[:project], h.id)  if options[:pdf]
+      end
+    end
+    # epilogue
   end
 
 #-------------------------------------------------------------------------- #

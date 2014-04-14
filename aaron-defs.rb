@@ -50,7 +50,7 @@ $aa_ext         = ".axa"
 ##
 # graphviz settings
 
-$axa_format     = "dot" #$axa_format     = "canon"
+$aa_format      = "dot" # $axa_format     = "canon"
 $deep_tag       = "comment"
 $aa_node_shape  = "component"
 $aa_stag_shape  = "octagon" #"ellipse"
