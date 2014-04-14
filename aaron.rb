@@ -284,18 +284,29 @@ Try "#{$aaron_name} help search" to find out how to analyse the output "in depth
   end
 
 #-------------------------------------------------------------------------- #
-  desc "file {NETSTAT-OUTPUT}", "Create a new diagram from a netstat file\nSupported netstat:\n#{$aa_netstat}"
+  desc "file [ONE OUTPUT FILE]", "Create a new diagram from netstat files\nSupported netstat:\n#{$aa_netstat}"
   method_option :os,       :type => :string,  :default => "#{$aa_os[0]}", :required => true,
     :banner => "TARGET_OS",
     :desc => "Values: #{$aa_os}"
-  
+  method_option :files,    :type => :array, :required => false, :banner => "multiple input files"
+
   ##
   # reads input from file
-  def file(nsfile)
-    puts "file: nsfile=#{nsfile}" if options[:verbose]
-    
+  def file(nsfile = nil)
     prologue
-    master.parse_netstat(File.read(nsfile))
+    
+    if not nsfile.nil? then
+      puts "files: nsfiles=#{nsfile}" if options[:verbose]
+      master.parse_netstat(File.read(nsfile))
+    elsif not options[:files].nil? then
+      puts "files: files=#{files}" if options[:verbose]
+      options[:files].each do |f|
+        master.parse_netstat(File.read(f))
+      end
+    else
+      help("file")
+    end
+        
     epilogue
   end
 

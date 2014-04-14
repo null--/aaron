@@ -289,17 +289,22 @@ class MasterMind
       end
       
       dp = e.dst_tag
-      dp = dp + "\n" + $aa_known_ports[dp] unless $aa_known_ports[dp].nil?
+      dp = dp + " " + $aa_known_ports[dp] unless $aa_known_ports[dp].nil?
       
       sp = e.src_tag
-      sp = sp + "\n" + $aa_known_ports[sp] unless $aa_known_ports[sp].nil?
+      sp = sp + " " + $aa_known_ports[sp] unless $aa_known_ports[sp].nil?
       
-      #c = @graph.add_edges(src, dst, "headlabel" => dp, "taillabel" => sp, "labeldistance" => "2", "color" => color)
+      # Edge: Method 1
+      # c = @graph.add_edges(src, dst, "headlabel" => dp, "taillabel" => sp, "labeldistance" => "2", "color" => color)
+      
+      # Edge: Method 2
+      # c = @graph.add_edges(src, dst, "label" => "src:" + sp + " dst: " + dp, "labeldistance" => "2", "color" => color)
+      
+      # Edge: Method 3
       ts = rand_str
       td = rand_str
       @graph.add_nodes(ts, "label" => sp, "shape" => $aa_stag_shape, "style" => "filled", "color" => $clr_tag)
       @graph.add_nodes(td, "label" => dp, "shape" => $aa_dtag_shape, "style" => "filled", "color" => $clr_tag)
-      
       @graph.add_edges(src, ts, "color" => color)
       @graph.add_edges(ts, td, "color" => color)
       @graph.add_edges(td, dst, "color" => color)

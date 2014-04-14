@@ -33,19 +33,21 @@ Designed for hacktists, professional penetration testers and APT teams.
   - Find high value targets by looking at a graphical map!
 
 #Features
-  # Core
+  Core
+    - Parse netstat results
     - Search!
     - Automated OS detection (based on netstat results)
+    - Add/Edit/Remove Hosts/Connections
     - rdoc
     
-  # Graph
+  Graph
     - Draw network graph of your local machine
     - Draw a network graph based on results collected 
         from several remote hosts
     - Update an existing network graph
     - Export graphs in png and pdf formats
   
-  # Advanced Targeting
+  Advanced Targeting
     - Add hosts to metasploit database
     - Supports SSH ans PSExec (SMB) protocols
     - Supports "adb shell" (android devices)  
@@ -69,15 +71,21 @@ Designed for hacktists, professional penetration testers and APT teams.
     $ sudo aptitude install ruby-graphviz libsqlite3-ruby ruby-termios 
     $ sudo aptitude install ruby-activerecord android-tools-adb
     
-    Note: Make sure metasploit is installed and msfdb 
-    (postgresql on port 5432 and 5433) is up
+    Note 1: 
+    Make sure metasploit is installed and msfdb (postgresql on port 
+    5432 and 5433) is up.
   
-  I think there shouldn't be any difficulties installing aaron on 
-  other GNU/Linux, BSD or other Unix families, However there are
-  some issues (like adb, psexec, etc.) installing aaron on a 
-  windows machine but fixing those issues wouldn't be a 
-  headache for a professional user.
+    Note 2:
+    I think there shouldn't be any difficulties installing aaron on 
+    other GNU/Linux, BSD or other Unix families, However there are
+    some issues (like adb, psexec, etc.) installing aaron on a 
+    windows machine but fixing those issues wouldn't be a 
+    headache for a professional user.
 
+  Third Party Tools:
+    1. xdot to view .dot file
+    2. sqlitebrowser to modify .axa file
+    
 #TODO
   - aaron search + regex
   - IPv6 netstat regex
