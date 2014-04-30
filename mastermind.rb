@@ -117,6 +117,8 @@ class MasterMind
   attr_accessor :deepinfo
   attr_accessor :comment
   
+  attr_accessor :max_edges
+  
   @db_axa # ActiveRecord object
 
 #-------------------------------------------------------------------------- #
@@ -142,6 +144,8 @@ class MasterMind
     @dead = args[:dead] or false
     putinf "DEAD MODE ACTIAED!" if @dead
 
+    @max_edges = args[:max_edges]
+    
     @graph = nil
     @host_node = nil
     
@@ -164,7 +168,7 @@ class MasterMind
     end
     
     if @backup then
-      FileUtils.mv(path, path + Time.now.strftime("%Y-%m-%d_%H-%M-%S") + ".axa") if File.exists? path
+      FileUtils.mv(path, path + "_" + Time.now.strftime("%Y-%m-%d_%H-%M-%S") + ".axa") if File.exists? path
     end
     
     if not @update and not must_exists then
@@ -232,6 +236,8 @@ class MasterMind
       puterr "Failed to create graph"
       # raise "DEAD END!"
     end
+    
+    puts "Maximum Number of Edges: " + @max_edges.to_s
   end
 
 #-------------------------------------------------------------------------- #
@@ -305,6 +311,7 @@ end
       end
     end
     
+    iconns = Hash.new
     edg.each do |e|
       src = nil
       dst = nil
@@ -329,6 +336,13 @@ end
       next if not once or dst.nil? or src.nil?
       color = $clr_tcp
       color = $clr_udp if not e.proto.nil? and e.proto.downcase == "udp"
+      
+      iconns[src+dst] = 0 if iconns[src+dst].nil?
+      iconns[dst+src] = 0 if iconns[dst+src].nil?
+      
+      iconns[src+dst] = iconns[src+dst] + 1
+      iconns[dst+src] = iconns[dst+src] + 1
+      next if iconns[src+dst] + iconns[dst+src] > 2 * @max_edges
       
       add_connection_to_graph(src, dst, e.src_tag, e.dst_tag, color)
     end
@@ -372,11 +386,12 @@ end
     ips.each do |ip|
       next unless ip.host.nil?
       mn  = ip.addr
-      
+    
       add_ip_to_graph(mn)
     end
     
     # add edges
+    iconns = Hash.new
     edges = Edge.all
     edges.each do |e|
       next if e.src_ip.nil? or e.dst_ip.nil?
@@ -397,6 +412,13 @@ end
       
       sp = e.src_tag
       sp = sp + " " + $aa_known_ports[sp] unless $aa_known_ports[sp].nil?
+      
+      iconns[src+dst] = 0 if iconns[src+dst].nil?
+      iconns[dst+src] = 0 if iconns[dst+src].nil?
+      
+      iconns[src+dst] = iconns[src+dst] + 1
+      iconns[dst+src] = iconns[dst+src] + 1
+      next if iconns[src+dst] + iconns[dst+src] > 2 * @max_edges
       
       add_connection_to_graph(src, dst, sp, dp, color)
     end
@@ -622,6 +644,11 @@ end
         right.host_id = nil
         right.addr = cn[:dst]
         right.save
+      end
+      
+      if left.host_id == right.host_id and not @loopback then
+        putinf "Skipped (loopback)"
+        next
       end
       
       # puts cn

@@ -213,13 +213,14 @@ class Aaron < Thor
     end
     
     if command.nil? then
-      puts <<-BANNER
+      puts <<-BANNER  
 Examples:
   10. Create a new diagram (or update and exsisting one) from a netstat output file, then generate report in png and pdf formats
-    ./aaron.rb file netstat.out --verbose --png --pdf --project test.axa
-  11. Create a new diagram (remove old #{$aa_ext} file) from a netstat output file
+    (max_edges=9999 means draw up to 9999 connections between two seperated hosts)
+    ./aaron.rb file netstat.out --verbose --png --pdf --project test.axa --max_edges 9999
+  11. Create a new diagram (remove old #{$aa_ext} file) from a netstat output file 
     ./aaron.rb file netstat-win.out --verbose --png --pdf --project test.axa --new
-  20. Use SSH to create a diagram (against a linux machine)
+  20. Use SSH to create a diagram (against a linux machine)1
     ./aaron.rb ssh localhost --user temp --pass temp --verbose --png --pdf --project test.axa
   21. More advanced SSH (against a windows machine)
     ./aaron.rb ssh example.com --user root --pass toor --verbose --png --pdf --project test.axa --port 80 --key ~/.ssh/id_rsa --new
@@ -238,11 +239,12 @@ Examples:
   53. Show open ports (listenning port) on a host
     ./aaron.rb show --port 192.168.0.1
     
--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-Is network graph too large? Try "#{$aaron_name} redraw --perhost"
-Does PDF output suck? Does GUI make you sick?! Do you love that old school black and white shell?
-Try "#{$aaron_name} help search" to find out how to analyse the output "in depth"!
-
+Notes from _null_:
+  0. Does PDF output suck? Does GUI make you sick?! Do you love that old school black and white shell?
+    Try "#{$aaron_name} help search" to find out how to analyse the output "in depth"!
+  1. --max_edges will not affect your project's database (axa file),
+    It affects the graphical output. set --max_edges to a reasonable value!
+  2. Use 'redraw' and 'redraw --perhost' when you only want to redraw your graphical output (and save time!)
       BANNER
     end
   end
@@ -264,6 +266,8 @@ Try "#{$aaron_name} help search" to find out how to analyse the output "in depth
       :desc => "Save graph in png format, too"
   class_option :pdf,      :type => :boolean, :default => false,
       :desc => "Save graph in pdf format, too"
+  class_option :max_edges, :type => :numeric, :default => 10,
+      :desc => "Maximum number of connections to be drawn. affects only pdf, png and graph files NOT PROJECT FILE"
 
 #-------------------------------------------------------------------------- #  
   desc "stdin", "Pipe netstat result into aaron\nSupported netstat:\n#{$aa_netstat}"
