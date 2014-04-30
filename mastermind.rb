@@ -159,11 +159,18 @@ class MasterMind
   def load_db(path, must_exists = false)
     puts "#{$aa_ban["msm"]} Loading #{path}..." if @verbose
     
-    if not @update and not must_exists and not @backup then
+    if not File.exist? path and @update then
+      @update = false
+    end
+    
+    if @backup then
+      FileUtils.mv(path, path + Time.now.strftime("%Y-%m-%d_%H-%M-%S") + ".axa") if File.exists? path
+    end
+    
+    if not @update and not must_exists then
       putinf "Removing existing project"
       FileUtils.rm(path) if File.exists? path
     end
-    # TODO: update, backup
     
     ActiveRecord::Base.establish_connection(
       :adapter  => 'sqlite3',
