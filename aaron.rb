@@ -94,7 +94,7 @@ class Aaron < Thor
 #-------------------------------------------------------------------------- #  
   def initialize(*args)
     super
-    puts "#{$nfo}" # if not ARGV[0].include? "msf" # silenced
+    puts "#{$nfo}" if not ARGV[0].include? "version" # silenced
     
     @master = MasterMind.new(options[:verbose], options)
   end
@@ -170,46 +170,48 @@ class Aaron < Thor
   # customized help task for +aaron+
   def help(command = nil)
     if command.nil? then
-      puts "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
+      puts ""
       puts "Brief Help"
-      puts "=========="
+      puts "===================================================================="
     end
     super(command)
     
     if command.nil? then
-      puts "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"
+      puts ""
       puts "Advanced Help"
-      puts "========="
+      puts "===================================================================="
+      super("version")
+      puts "-----------------------------"
       super("adb")
-      puts "-----------------------------------------------------"
+      puts "-----------------------------"
       super("addconn")
-      puts "-----------------------------------------------------"
+      puts "-----------------------------"
       super("addhost")
-      puts "-----------------------------------------------------"
+      puts "-----------------------------"
       super("editconn")
-      puts "-----------------------------------------------------"
+      puts "-----------------------------"
       super("edithost")
-      puts "-----------------------------------------------------"
+      puts "-----------------------------"
       super("file")
-      puts "-----------------------------------------------------"
+      puts "-----------------------------"
       super("help")
-      puts "-----------------------------------------------------"
+      puts "-----------------------------"
       super("psexec")
-      puts "-----------------------------------------------------"
+      puts "-----------------------------"
       super("redraw")
-      puts "-----------------------------------------------------"
+      puts "-----------------------------"
       super("rmconn")
-      puts "-----------------------------------------------------"
+      puts "-----------------------------"
       super("rmhost")
-      puts "-----------------------------------------------------"
+      puts "-----------------------------"
       super("search")
-      puts "-----------------------------------------------------"
+      puts "-----------------------------"
       super("show")
-      puts "-----------------------------------------------------"
+      puts "-----------------------------"
       super("ssh")
-      puts "-----------------------------------------------------"
+      puts "-----------------------------"
       super("stdin")
-      puts "-----------------------------------------------------"
+      puts "-----------------------------"
     end
     
     if command.nil? then
@@ -242,9 +244,12 @@ Examples:
 Notes from _null_:
   0. Does PDF output suck? Does GUI make you sick?! Do you love that old school black and white shell?
     Try "#{$aaron_name} help search" to find out how to analyse the output "in depth"!
-  1. --max_edges will not affect your project's database (axa file),
-    It affects the graphical output. set --max_edges to a reasonable value!
-  2. Use 'redraw' and 'redraw --perhost' when you only want to redraw your graphical output (and save time!)
+  1. Remeber, the #{$aa_ext} files are actually a sqlite3 database, you can open/modify them directly with a sqlite browser
+    or use them programmatically inside youre own code.
+  2. The --max_edges option, will not affect your project's database (#{$aa_ext} file),
+    It affects the graphical output ONLY. Please, set the --max_edges to a reasonable value!
+  3. Use 'redraw' and 'redraw --perhost' whenever you just want to draw a graphical output from an existing project (and save time!)
+  4. There are different types of graphical output which you can choose by setting the --template option.
       BANNER
     end
   end
@@ -268,6 +273,8 @@ Notes from _null_:
       :desc => "Save graph in pdf format, too"
   class_option :max_edges, :type => :numeric, :default => 10,
       :desc => "Maximum number of connections to be drawn. affects only pdf, png and graph files NOT PROJECT FILE"
+  class_option :template, :type => :numeric, :default => 3,
+      :desc => "Change your graphical output template. Possible values:\n1, 2, 3, 4"
 
 #-------------------------------------------------------------------------- #  
   desc "stdin", "Pipe netstat result into aaron\nSupported netstat:\n#{$aa_netstat}"
@@ -318,6 +325,14 @@ Notes from _null_:
     end
         
     epilogue
+  end
+
+#-------------------------------------------------------------------------- #
+  desc "version", "Print current version"
+  ##
+  # print version
+  def version
+    puts $aaron_name + " " + $aa_version
   end
 
 #-------------------------------------------------------------------------- #

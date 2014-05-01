@@ -118,6 +118,7 @@ class MasterMind
   attr_accessor :comment
   
   attr_accessor :max_edges
+  attr_accessor :template
   
   @db_axa # ActiveRecord object
 
@@ -145,6 +146,7 @@ class MasterMind
     putinf "DEAD MODE ACTIAED!" if @dead
 
     @max_edges = args[:max_edges]
+    @template = args[:template]
     
     @graph = nil
     @host_node = nil
@@ -259,26 +261,29 @@ end
 def add_connection_to_graph(src, dst, sp, dp, color)
   # puts src + dst + sp + dp + color
 
-  # Edge: Method 1
-  # c = @graph.add_edges(src, dst, "headlabel" => dp, "taillabel" => sp, "labeldistance" => "2", "color" => color)
+  case @template
+  when 1
+    c = @graph.add_edges(src, dst, "headlabel" => dp, "taillabel" => sp, "labeldistance" => "2", "color" => color)
       
-  # Edge: Method 2
-  c = @graph.add_edges(src, dst, "label" => "src:" + sp + " dst: " + dp, "labeldistance" => "2", "color" => color)
+  when 2
+    c = @graph.add_edges(src, dst, "label" => "src:" + sp + " dst: " + dp, "labeldistance" => "2", "color" => color)
       
-  # Edge: Method 3
-  # ts = rand_str
-  # td = rand_str
-  # @graph.add_nodes(ts, "label" => sp, "shape" => $aa_stag_shape, "style" => "filled", "color" => $clr_tag)
-  # @graph.add_nodes(td, "label" => dp, "shape" => $aa_dtag_shape, "style" => "filled", "color" => $clr_tag)
-  # @graph.add_edges(src, ts, "color" => color)
-  # @graph.add_edges(ts, td, "color" => color)
-  # @graph.add_edges(td, dst, "color" => color)
-
-  # Edge: Method 4
-  # ts = rand_str
-  # @graph.add_nodes(ts, "label" => sp, "shape" => $aa_stag_shape, "style" => "filled", "color" => $clr_tag)
-  # @graph.add_edges(src, ts, "color" => color)
-  # @graph.add_edges(ts, dst, "label" => dp, "color" => color)
+  when 3
+    ts = rand_str
+    td = rand_str
+    @graph.add_nodes(ts, "label" => sp, "shape" => $aa_stag_shape, "style" => "filled", "color" => $clr_tag)
+    @graph.add_nodes(td, "label" => dp, "shape" => $aa_dtag_shape, "style" => "filled", "color" => $clr_tag)
+    @graph.add_edges(src, ts, "color" => color)
+    @graph.add_edges(ts, td, "color" => color)
+    @graph.add_edges(td, dst, "color" => color)
+  
+  when 4
+    ts = rand_str
+    @graph.add_nodes(ts, "label" => sp, "shape" => $aa_stag_shape, "style" => "filled", "color" => $clr_tag)
+    @graph.add_edges(src, ts, "color" => color)
+    @graph.add_edges(ts, dst, "label" => dp, "color" => color)
+    
+  end
 end
 
 #-------------------------------------------------------------------------- #
