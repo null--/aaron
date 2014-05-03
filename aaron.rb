@@ -22,8 +22,8 @@
 require 'thor'
 require 'net/ssh'
 require 'open3'
-require './aaron-defs.rb'
-require './mastermind.rb'
+require_relative './aaron-defs.rb'
+require_relative './mastermind.rb'
 
 #-------------------------------------------------------------------------- #
 # creates a new process and controls its input/outputs
@@ -308,15 +308,17 @@ Notes from _null_:
     prologue
     
     if not nsfile.nil? then
-      puts "files: nsfiles=#{nsfile}" if options[:verbose]
-      
+      puts "files: nsfiles=#{nsfile}"
       master.parse_netstat(File.read(nsfile))
+      
     elsif not options[:files].nil? then
-      puts "files: files=#{options[:files]}" if options[:verbose]
+      putinf "files: files=#{options[:files]}"
       
       options[:files].each do |fr|
+        force_update = false
         Dir[fr].select do |f|
-          putinf "Processing: #{f}"
+          puts "Processing: #{f}"
+          master.os = "auto"
           master.parse_netstat(File.read(f))
         end
       end

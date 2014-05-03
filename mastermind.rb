@@ -632,38 +632,69 @@ end
     # add edges
     total = conns.size
     cur = 0
+    
+    # make things faster!
+    mips = Ip.all.to_a
+    medge = Edge.all.to_a
     conns.each do |cn|
       cur = cur + 1
-      STDOUT.write "\rProcessing connections:\t#{cur}/#{total}\t#{cur.percent_of(total)} \t"
+      STDOUT.write "\rProcessing connections:\t#{cur}/#{total}\t\t #{cur.percent_of(total)} \t"
       # add new IP
-      left  = Ip.find(:first, :conditions => {:addr => cn[:src]})
+      left = nil
+      right = nil
+      mips.each do |i|
+        if i.addr == cn[:src] then
+          left = i
+        elsif i.addr == cn[:dst] then
+          right = i
+        end
+      end
+      # left  = Ip.find(:first, :conditions => {:addr => cn[:src]})
       if left.nil? then
         left = Ip.new
         left.host_id = nil
         left.addr = cn[:src]
         left.save
+        mips << left
       end
-      right = Ip.find(:first, :conditions => {:addr => cn[:dst]})
+      # right = Ip.find(:first, :conditions => {:addr => cn[:dst]})
       if right.nil? then
         right = Ip.new
         right.host_id = nil
         right.addr = cn[:dst]
         right.save
+        mips << right
       end
       
-      if left.host_id == right.host_id and not @loopback then
+      if (left.host_id == right.host_id or
+         left.addr.include? "127.0.0.1" or right.addr.include?"127.0.0.1") and 
+         not @loopback 
+      then
         putinf "Skipped (loopback)"
         next
       end
       
       # puts cn
       # add new connections
-      if not Edge.find(:first, :conditions => {
-          :src_tag => cn[:sport], 
-          :dst_tag => cn[:dport], 
-          :src_ip_id => left.id, 
-          :dst_ip_id => right.id}) 
-      then
+      #if not Edge.find(:first, :conditions => {
+      #    :src_tag => cn[:sport], 
+      #    :dst_tag => cn[:dport], 
+      #    :src_ip_id => left.id, 
+      #    :dst_ip_id => right.id}) 
+      #then
+      
+      found = false
+      medge.each do |me|
+        if me.src_tag == cn[:sport] and
+           me.dst_tag == cn[:dport] and
+           me.src_ip_id == left.id and
+           me.dst_ip_id == right.id
+        then
+          found = true
+          next
+        end
+      end
+      if not found then
         e = Edge.new
         if cn.names.include?("proto") then
           e.proto = cn[:proto]
@@ -678,7 +709,8 @@ end
         
         e.type_tag = cn[:type] if cn.names.include? "type"
         e.save
-        
+          
+        medge << e
         print "Edge: " + e.proto + " # " if @verbose
         print e.src_ip.addr + " : " + e.src_tag + " <--> " + 
             e.dst_ip.addr + " : " + e.dst_tag + 
