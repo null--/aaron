@@ -146,6 +146,9 @@ class MasterMind
     putinf "DEAD MODE ACTIAED!" if @dead
 
     @max_edges = args[:max_edges]
+    # template = connectivity graph
+    @max_edges = 1 if args[:template] == 0
+    
     @template = args[:template]
     
     @graph = nil
@@ -239,7 +242,7 @@ class MasterMind
       # raise "DEAD END!"
     end
     
-    puts "Maximum Number of Edges: " + @max_edges.to_s
+    # puts "Maximum Number of Edges: " + @max_edges.to_s
   end
 
 #-------------------------------------------------------------------------- #
@@ -262,6 +265,8 @@ def add_connection_to_graph(src, dst, sp, dp, color)
   # puts src + dst + sp + dp + color
 
   case @template
+  when 0
+    c = @graph.add_edges(src, dst, "color" => color)
   when 1
     c = @graph.add_edges(src, dst, "headlabel" => dp, "taillabel" => sp, "labeldistance" => "2", "color" => color)
       
@@ -382,7 +387,7 @@ end
       end
       
       hosts_lbl << mn
-      puts mn
+      # puts mn
       add_host_to_graph(mn, h.find_os)
     end
     
@@ -558,7 +563,12 @@ end
     conns = Array.new
     hostips = Array.new
     
-    hostips << "127.0.0.1" if @loopback
+    # TODO: loopback is not geek!
+    if @loopback then
+      hostips << "127.0.0.1" 
+      conns << "127.0.0.1"
+      putinf "ADDING 127.0.0.1"
+    end
     
     i = 0
     netstat_regex_loop(data, rex) do |cn|
@@ -569,11 +579,14 @@ end
       print cn[:src] + " : " + cn[:sport] + " <--> " + 
             cn[:dst] + " : " + cn[:dport] + 
             " (" + cn[:type] + ")" + "\n" if @verbose
-            
-      conns << cn
+      
+      if not cn[:src].include? "127.0.0.1" then
+        conns << cn
+      end
       
       if not cn[:src].include? "127.0.0.1" and not hostips.include? cn[:src] then
          hostips << cn[:src]
+         putinf "-- ADDED"
       end
 
     end
@@ -582,12 +595,20 @@ end
     
     # find host node
     @host_node = nil
-    hostips.each do |hip|
-      nip = Ip.find(:first, :conditions => {:addr => hip})
-      if not nip.nil? then
-        @host_node = nip.host
-        break
+    Host.all.each do |h|
+      h.ips.each do |ip|
+        hostips.each do |hip|          
+          if ip.addr == hip then
+            putinf "#{hip} was Found! (#{h.id})"
+            @host_node = h
+            break
+          end
+        end
+        
+        break unless @host_node.nil?
       end
+      
+      break unless @host_node.nil?
     end
     
     # create new host node
@@ -595,6 +616,8 @@ end
     if new_node then
       @host_node = Host.new
       @host_node.save
+      
+      putinf "-- New Host"
     end
     
     if @info.nil? then
@@ -622,7 +645,8 @@ end
       end
       
       if not exists then
-        ip = Ip.new
+        ip = Ip.find(:first, :conditions => {:addr => hip})
+        ip = Ip.new if ip.nil?
         ip.host_id = @host_node.id
         ip.addr = hip
         ip.save

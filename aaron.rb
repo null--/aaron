@@ -250,6 +250,7 @@ Notes from _null_:
     It affects the graphical output ONLY. Please, set the --max_edges to a reasonable value!
   3. Use 'redraw' and 'redraw --perhost' whenever you just want to draw a graphical output from an existing project (and save time!)
   4. There are different types of graphical output which you can choose by setting the --template option.
+      One of great templates is --template=0 which shows IP connectivity only, You can use it when you don't care about src and dst ports.
       BANNER
     end
   end
@@ -274,7 +275,12 @@ Notes from _null_:
   class_option :max_edges, :type => :numeric, :default => 10,
       :desc => "Maximum number of connections to be drawn. affects only pdf, png and graph files NOT PROJECT FILE"
   class_option :template, :type => :numeric, :default => 3,
-      :desc => "Change your graphical output template. Possible values:\n1, 2, 3, 4"
+      :desc => "Change your graphical output template. Possible values:\n
+      \t0: draw connectivity graph (forces --max-edges to be 1)
+      \t1: draw src and dst ports on head and tail of edges\n
+      \t2: draw src and dst ports on lebel of edge\n
+      \t3: draw src and dst ports as seperate nodes\n
+      \t4: draw src ports as seperate nodes and write dst port on label of edge"
 
 #-------------------------------------------------------------------------- #  
   desc "stdin", "Pipe netstat result into aaron\nSupported netstat:\n#{$aa_netstat}"
@@ -291,6 +297,8 @@ Notes from _null_:
       data = data + inp
     end
     prologue
+    
+    putinf data
     master.parse_netstat(data)
     epilogue
   end
