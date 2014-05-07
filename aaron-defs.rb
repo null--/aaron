@@ -18,7 +18,7 @@
 #-------------------------------------------------------------------------- #
 ##
 # aaron current version
-$aa_version = "1.1.3-testing"
+$aa_version = "1.1.4-testing"
 
 $aaron_name = "#aaron"
 # $aaronizer_name = "#aaronizer"
