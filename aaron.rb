@@ -94,7 +94,9 @@ class Aaron < Thor
 #-------------------------------------------------------------------------- #  
   def initialize(*args)
     super
-    puts "#{$nfo}" if not ARGV[0].include? "version" # silenced
+    
+    # ./aaron version
+    puts "#{$nfo}" if not ARGV[0].nil? and not ARGV[0].include? "version" # silenced
     
     @master = MasterMind.new(options[:verbose], options)
   end
