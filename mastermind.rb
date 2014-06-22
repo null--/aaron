@@ -846,6 +846,7 @@ end
   end
   
   def search(sos, dos, sp, dp, src, dst, txt)
+    # TODO: search sucks! execute SQL directly
     clear_latest_targets
     
     ips = Ip.find(:all)
@@ -895,20 +896,23 @@ end
         sos_m = true
       end
       
-      if not ip.host.nil? and not ip.host.name.nil? and ip.host.name.downcase.include? txt.downcase then
-        txt_m = true
-      end
+      if not txt.nil? then
       
-      if not ip.host.nil? and not ip.host.info.nil? and ip.host.info.downcase.include? txt.downcase then
-        txt_m = true
-      end
-      
-      if not ip.host.nil? and not ip.host.deepinfo.nil? and ip.host.deepinfo.downcase.include? txt.downcase then
-        txt_m = true
-      end
-      
-      if not ip.host.nil? and not ip.host.comment.nil? and ip.host.name.comment.include? txt.downcase then
-        txt_m = true
+        if not ip.host.nil? and not ip.host.name.nil? and ip.host.name.downcase.include? txt.downcase then
+          txt_m = true
+        end
+        
+        if not ip.host.nil? and not ip.host.info.nil? and ip.host.info.downcase.include? txt.downcase then
+          txt_m = true
+        end
+        
+        if not ip.host.nil? and not ip.host.deepinfo.nil? and ip.host.deepinfo.downcase.include? txt.downcase then
+          txt_m = true
+        end
+        
+        if not ip.host.nil? and not ip.host.comment.nil? and ip.host.name.comment.include? txt.downcase then
+          txt_m = true
+        end
       end
       
       # puts sos_m.to_s + dos_m.to_s + sp_m.to_s + dp_m.to_s + src_m.to_s + dst_m.to_s + txt_m.to_s
